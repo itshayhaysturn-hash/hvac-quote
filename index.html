@@ -44,134 +44,96 @@
   input[type="text"], input[type="number"], textarea.findings {
     width: 100%;
     box-sizing: border-box;
-    padding: 12px;
-    font-size: 17px;
+    padding: 11px;
+    font-size: 16px;
     border-radius: 8px;
     border: 1px solid #444;
     background: #242424;
     color: #fff;
   }
-  .grid-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .btn-paste {
-    background: #0d47a1;
-    color: #fff;
-    border: 1px solid #2196f3;
-    border-radius: 8px;
-    padding: 12px;
-    width: 100%;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    margin-bottom: 8px;
+    background: #0d47a1; color: #fff; border: 1px solid #2196f3;
+    border-radius: 8px; padding: 12px; width: 100%; font-size: 16px;
+    font-weight: bold; cursor: pointer; margin-bottom: 8px;
   }
   .btn-vendor {
-    background: #1565c0;
-    color: #fff;
-    border: 1px solid #42a5f5;
-    border-radius: 8px;
-    padding: 12px;
-    width: 100%;
-    font-size: 15px;
-    font-weight: bold;
-    cursor: pointer;
-    margin-top: 12px;
+    background: #1565c0; color: #fff; border: 1px solid #42a5f5;
+    border-radius: 8px; padding: 14px; width: 100%; font-size: 15px;
+    font-weight: bold; cursor: pointer;
   }
-  .paste-status {
-    font-size: 14px;
-    color: #8ce99a;
-    min-height: 20px;
-    margin-bottom: 6px;
-  }
+  .paste-status { font-size: 14px; color: #8ce99a; min-height: 20px; margin-bottom: 6px; }
   .item-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    background: #242424;
-    padding: 8px;
-    border-radius: 8px;
-    margin-bottom: 8px;
-    border: 1px solid #383838;
+    position: relative; display: flex; gap: 6px; align-items: center;
+    background: #242424; padding: 8px; border-radius: 8px;
+    margin-bottom: 8px; border: 1px solid #383838; flex-wrap: wrap;
   }
-  .item-row input[type="number"] {
-    width: 72px;
-    text-align: center;
-    padding: 10px;
-    font-weight: bold;
-    background: #181818;
+  .item-row input.qty { width: 64px; text-align: center; font-weight: bold; background: #181818; }
+  .item-row input.code { flex: 1; min-width: 130px; text-transform: uppercase; }
+  .vendor-row input.v-qty { width: 60px; text-align: center; font-weight: bold; background: #181818; }
+  .vendor-row input.v-desc { flex: 1.3; min-width: 130px; text-transform: uppercase; }
+  .vendor-row input.v-part { flex: 1; min-width: 105px; text-transform: uppercase; }
+  .vendor-row input.v-price { width: 85px; }
+  .vendor-row input.v-vendor { flex: 1; min-width: 100px; }
+  .search-dropdown {
+    position: absolute; top: 100%; left: 0; right: 0; z-index: 99;
+    background: #1e272e; border: 1px solid #4da3ff; border-radius: 8px;
+    max-height: 200px; overflow-y: auto; box-shadow: 0 6px 16px rgba(0,0,0,0.7);
   }
-  .item-row input[type="text"] {
-    flex: 1;
-    padding: 10px;
-    text-transform: uppercase;
+  .search-option {
+    padding: 10px 12px; border-bottom: 1px solid #333; cursor: pointer; font-size: 15px;
   }
+  .search-option:hover { background: #0d47a1; }
+  .search-option strong { color: #4da3ff; }
   .btn-remove {
-    background: #b3261e;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 10px 13px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
+    background: #b3261e; color: white; border: none; border-radius: 6px;
+    padding: 10px 12px; font-size: 15px; font-weight: bold; cursor: pointer;
   }
   .btn-add {
-    background: #2b5b84;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 8px 12px;
-    font-size: 14px;
-    font-weight: bold;
-    cursor: pointer;
+    background: #2b5b84; color: white; border: none; border-radius: 6px;
+    padding: 8px 12px; font-size: 14px; font-weight: bold; cursor: pointer;
   }
-  .actions { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+  .pill-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .batch-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #263238; color: #8ce99a; border: 1px solid #4caf50;
+    border-radius: 20px; padding: 6px 12px; font-size: 14px; font-weight: bold; cursor: pointer;
+  }
+  .batch-pill.editing { background: #e65100; color: #fff; border-color: #ff9800; }
+  .pill-del {
+    background: rgba(255,255,255,0.15); color: #ff8a80; border-radius: 50%;
+    width: 20px; height: 20px; display: inline-flex; align-items: center;
+    justify-content: center; font-size: 13px; line-height: 1;
+  }
+  .pill-del:hover { background: #b3261e; color: #fff; }
+
+    .actions { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
   .btn-primary {
-    background: #2e7d32;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 15px;
-    font-size: 18px;
-    font-weight: bold;
-    cursor: pointer;
+    background: #2e7d32; color: white; border: none; border-radius: 8px;
+    padding: 15px; font-size: 18px; font-weight: bold; cursor: pointer;
   }
   .btn-secondary {
-    background: #2c2c2c;
-    color: #fff;
-    border: 1px solid #555;
-    border-radius: 8px;
-    padding: 13px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
+    background: #2c2c2c; color: #fff; border: 1px solid #555; border-radius: 8px;
+    padding: 13px; font-size: 16px; font-weight: bold; cursor: pointer;
   }
   textarea.output-box {
-    width: 100%;
-    height: 270px;
-    background: #000;
-    border: 1px solid #333;
-    padding: 12px;
-    border-radius: 8px;
-    font-size: 14px;
-    color: #8ce99a;
-    margin-top: 16px;
-    box-sizing: border-box;
-    font-family: monospace;
+    width: 100%; height: 270px; background: #000; border: 1px solid #333;
+    padding: 12px; border-radius: 8px; font-size: 14px; color: #8ce99a;
+    margin-top: 16px; box-sizing: border-box; font-family: monospace;
   }
 </style>
 </head>
 <body>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+    <h2 style="margin:0;">HVACR Field Quote</h2>
+    <button type="button" class="btn-remove" style="font-size:14px; padding:8px 12px;" onclick="confirmNewJob()">New Job / Clear</button>
+  </div>
 
-  <h2>HVACR Field Quote</h2>
 
   <!-- SMART PASTE BAR -->
   <button type="button" class="btn-paste" onclick="smartPaste()">Paste Copied Info (Cust or Equip)</button>
   <div id="paste-status" class="paste-status"></div>
-  <textarea id="manual-paste" rows="2" placeholder="Or click here & press Ctrl+V to paste..." oninput="parseText(this.value); this.value='';" style="width:100%; box-sizing:border-box; border-radius:8px; border:1px solid #444; background:#242424; color:#fff; margin-bottom:14px; font-size:15px; padding:10px;"></textarea>
+  <textarea id="manual-paste" rows="2" placeholder="Or click here & press Ctrl+V to paste..." oninput="parseText(this.value); this.value='';" style="margin-bottom:14px; font-size:15px; padding:10px;"></textarea>
 
   <!-- 1. CUSTOMER INFO -->
   <div class="section">
@@ -191,22 +153,32 @@
     <label for="addr">Address & Unit Location</label>
     <input type="text" id="addr" placeholder="Address / Service Area / Unit Tag">
   </div>
-
-  <!-- 2. EQUIPMENT INFO -->
+  
+    <!-- 2. EQUIPMENT INFO -->
   <div class="section">
     <div class="section-title">2. Equipment Info</div>
     <div class="grid-2">
       <div>
+        <label for="unitTag">Unit #</label>
+        <input type="text" id="unitTag" placeholder="e.g. RTU-1, AC-2, WIC">
+      </div>
+      <div>
         <label for="brand">Make / Brand</label>
         <input type="text" id="brand" placeholder="e.g. LENNOX">
       </div>
+    </div>
+
+    <div class="grid-2">
       <div>
         <label for="year">Year</label>
         <input type="text" id="year" placeholder="e.g. 2012">
       </div>
+      <div>
+        <label for="equipDesc">Equipment Description</label>
+        <input type="text" id="equipDesc" placeholder="e.g. PACKAGE UNIT">
+      </div>
     </div>
-    <label for="equipDesc">Equipment Description</label>
-    <input type="text" id="equipDesc" placeholder="e.g. PACKAGE UNIT">
+
     <div class="grid-2">
       <div>
         <label for="model">Model #</label>
@@ -217,23 +189,48 @@
         <input type="text" id="serial" placeholder="Serial Number">
       </div>
     </div>
-
-    <button type="button" class="btn-vendor" onclick="emailVendor()">Email Vendor for Part Price & Availability</button>
   </div>
 
+  
+  
   <!-- 3. DESCRIPTION OF FINDINGS -->
   <div class="section">
     <div class="section-title">3. Description of Findings</div>
-    <textarea id="desc" class="findings" rows="2" placeholder="Type: needs new compressor..." oninput="checkKeywords()"></textarea>
+    <textarea id="desc" class="findings" rows="2" placeholder="Type: needs new compressor or txv..." oninput="checkKeywords()"></textarea>
 
+    <!-- A. TRUCK STOCK LIST -->
     <div class="section-title" style="margin-top: 16px; color: #ddd;">
-      <span>Parts & Truck Stock</span>
-      <button type="button" class="btn-add" onclick="addRow('', '')">+ Add Line</button>
+      <span>Truck Stock (Search by Name or Code)</span>
+      <button type="button" class="btn-add" onclick="addStockRow('', '')">+ Add Stock</button>
     </div>
-    <div id="items-container"></div>
+    <div id="stock-container"></div>
+
+    <!-- B. NON-STOCK / VENDOR PARTS -->
+    <div class="section-title" style="margin-top: 18px; color: #ffcc80;">
+      <span>Non-Stock / Vendor Parts</span>
+      <button type="button" class="btn-add" style="background:#8d5524;" onclick="addVendorRow('', '', '', '','')">+ Add Vendor Part</button>
+    </div>
+    <div id="vendor-parts-container"></div>
+  </div>
+
+    <!-- MULTI-UNIT BATCH BAR -->
+  <div class="section" style="border-color: #2b5b84;">
+    <div class="section-title" style="margin-bottom: 6px;">Multi-Unit Batch</div>
+    <div class="grid-2">
+      <button type="button" class="btn-add" id="btn-batch-action" style="padding: 12px; font-size: 15px;" onclick="saveUnitToBatch()">+ Add Unit to Batch</button>
+      <button type="button" class="btn-secondary" id="btn-clear-batch" style="padding: 12px; font-size: 15px;" onclick="clearBatch()">Clear All</button>
+    </div>
+    <div id="batch-pills" class="pill-bar"></div>
+    <div id="batch-status" class="paste-status" style="margin-top: 8px;">Batch: 0 units (will send current unit)</div>
+  </div>
+
+    <div id="batch-pills" class="pill-bar"></div>
+    <div id="batch-status" class="paste-status" style="margin-top: 8px;">Batch: 0 units (will send current unit)</div>
   </div>
 
   <div class="actions">
+    <div id="vendor-buttons-container" style="display:flex; flex-direction:column; gap:10px;"></div>
+    <button type="button" class="btn-vendor" id="btn-email-office" style="background:#00695c; border-color:#26a69a;" onclick="emailOffice()">Email Quote to Office</button>
     <button type="button" class="btn-primary" onclick="generateOutput()">Generate Quote & Copy</button>
     <button type="button" class="btn-secondary" onclick="downloadFile()">Save .TXT File (For OneDrive)</button>
   </div>
