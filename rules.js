@@ -1,17 +1,4 @@
-const TRUCK_STOCK_CATALOG = [
-  { code: '15SS', desc: '15% Silver Solder Stick' },
-  { code: 'OXY', desc: 'Oxygen (1/10 Bottle Use)' },
-  { code: 'ACET', desc: 'Acetylene (1/10 Bottle Use)' },
-  { code: 'NITRO', desc: 'Nitrogen Purge' },
-  { code: 'MWELD', desc: 'Master Weld / Brazing Kit' },
-  { code: 'THTRP', desc: 'Thermal Heat Trap Paste' },
-  { code: '388', desc: '3/8" 8 Cubic Solder Liquid Line Drier' },
-  { code: '1216BFWD', desc: '1/2" Sweat 16 Cubic Bi-Flo Liquid Line Drier' },
-  { code: '3P40A24V', desc: '3 Pole 40 Amp 24V Contactor' },
-  { code: 'R410A', desc: 'R-410A Refrigerant (lb)' },
-  { code: 'R404A', desc: 'R-404A Refrigerant (lb)' },
-  { code: 'R290', desc: 'R-290 Propane Refrigerant (Can/Oz)' }
-];
+
 
 const JOB_TEMPLATES = {
   compressor: {

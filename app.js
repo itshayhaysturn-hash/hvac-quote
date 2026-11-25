@@ -21,7 +21,7 @@ function detectRefrigerant() {
   const desc = document.getElementById('equipDesc').value.toUpperCase();
   const addr = document.getElementById('addr').value.toUpperCase();
   const combined = `${lastSystemType} ${unitTag} ${desc} ${addr}`;
-  return /\b(REFR|REFRIGERATION|COOLER|FREEZER|WIC|WIF|REACH)\b/.test(combined) ? 'R404A' : 'R410A';
+  return /\b(REFR|REFRIGERATION|COOLER|FREEZER|WIC|WIF|REACH)\b/.test(combined) ? 'R404' : 'R410A';
 }
 
 
@@ -169,11 +169,71 @@ function selectStock(optionEl, code) {
   if (row === container.lastElementChild) addStockRow('', '');
 }
 
+
+
 document.addEventListener('click', e => {
   if (!e.target.classList.contains('code')) {
     document.querySelectorAll('.search-dropdown').forEach(d => d.style.display = 'none');
   }
 });
+
+let modalSelectedCodes = new Set();
+
+function renderCategoryButtons() {
+  const bar = document.getElementById('stock-category-bar');
+  if (!bar || typeof TRUCK_STOCK_CATALOG === 'undefined') return;
+  const categories = [...new Set(TRUCK_STOCK_CATALOG.map(item => item.category))];
+  bar.innerHTML = categories.map(cat =>
+    `<button type="button" class="cat-pill" onclick="openStockCategory('${cat}')">${cat}</button>`
+  ).join('');
+}
+
+function openStockCategory(category) {
+  modalSelectedCodes.clear();
+  document.getElementById('stock-modal-title').textContent = `${category} — Tap to Select`;
+  const listEl = document.getElementById('stock-modal-list');
+  const items = TRUCK_STOCK_CATALOG.filter(i => i.category === category);
+
+  listEl.innerHTML = items.map(item => `
+    <label class="modal-item">
+      <input type="checkbox" value="${item.code}" onchange="toggleModalCode('${item.code}', this.checked)">
+      <div>
+        <strong style="color:#4da3ff;">${item.code}</strong><br>
+        <span style="font-size:14px; color:#ccc;">${item.desc}</span>
+      </div>
+    </label>
+  `).join('');
+
+  updateModalCount();
+  document.getElementById('stock-modal').style.display = 'flex';
+}
+
+function toggleModalCode(code, isChecked) {
+  if (isChecked) modalSelectedCodes.add(code);
+  else modalSelectedCodes.delete(code);
+  updateModalCount();
+}
+
+function updateModalCount() {
+  document.getElementById('btn-add-selected-stock').textContent = `Add Selected (${modalSelectedCodes.size})`;
+}
+
+function closeStockModal() {
+  document.getElementById('stock-modal').style.display = 'none';
+}
+
+function confirmStockModal() {
+  const container = document.getElementById('stock-container');
+  // Remove trailing blank placeholder row before adding picked items
+  if (container.lastElementChild && !container.lastElementChild.querySelector('.code').value.trim()) {
+    container.lastElementChild.remove();
+  }
+  modalSelectedCodes.forEach(code => addStockRow('1', code));
+  addStockRow('', '');
+  closeStockModal();
+  saveSessionState();
+}
+
 
 function addVendorRow(qty, desc, part, price, vendor) {
   const defaultVendor = vendor || document.getElementById('brand').value.trim().toUpperCase();
@@ -531,8 +591,8 @@ function confirmNewJob() {
   document.getElementById('paste-status').textContent = 'Cleared for new job.';
   updateBatchUI();
 }
-
 window.addEventListener('DOMContentLoaded', () => {
+  renderCategoryButtons();
   restoreSessionState();
   document.body.addEventListener('input', saveSessionState);
   document.body.addEventListener('click', () => setTimeout(saveSessionState, 50));
@@ -541,6 +601,8 @@ window.addEventListener('DOMContentLoaded', () => {
 window.addEventListener('pageshow', () => {
   restoreSessionState();
 });
+
+
 
 
 
