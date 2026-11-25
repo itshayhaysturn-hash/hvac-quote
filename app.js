@@ -53,11 +53,9 @@ function parseText(raw) {
   if (/\bREFR(IGERATION)?\b/i.test(raw)) lastSystemType = 'REFR';
   else if (/\bHVAC\b/i.test(raw)) lastSystemType = 'HVAC';
 
-  const woVal = grabMatch(raw, /(?:^|[^A-Z])(?:PM)?WO\s*#?[\s:\-]+([A-Z0-9\-]+)/i);
-  if (woVal) { document.getElementById('wo').value = woVal; updated.push('WO #'); }
+    const woVal = grabMatch(raw, /(?:WO|Work\s*Order)\s*#?\s*[:\-]?\s*([A-Z0-9\-]+)/i);
+  const poVal = grabMatch(raw, /(?:Cust(?:omer)?\s*)?PO\s*#?\s*[:\-]?\s*([A-Z0-9\-]+)/i);
 
-  const poVal = grabMatch(raw, /Cust\s*PO\s*#?[\s:\-]+([A-Z0-9\-]+)/i);
-  if (poVal) { document.getElementById('po').value = poVal; updated.push('Cust PO'); }
 
   let newBrand = '';
   const makeVal = grabMatch(raw, /Make[\s:\-]+(.+)/i);
