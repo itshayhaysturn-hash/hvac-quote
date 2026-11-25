@@ -30,3 +30,10 @@ const KNOWN_BRANDS = [
   'RHEEM', 'RUUD', 'AAON', 'COPELAND', 'HEATCRAFT', 'BOHN',
   'HUSSMANN', 'TRUE', 'BEVERAGE-AIR', 'MANITOWOC', 'HOSHIZAKI', 'SCOTSMAN'
 ];
+
+const OFFICE_EMAIL = 'denton404quotes@nextechna.com';
+
+const VENDOR_EMAILS = {
+  LENNOX: 'LNXNationalAccountsParts@Lennoxind.com'
+};
+
