@@ -132,18 +132,32 @@ function clampQty(input) {
   }
 }
 
+function formatStockDisplay(codeOrFull) {
+  const raw = (codeOrFull || '').trim();
+  if (!raw) return '';
+  if (raw.includes(' - ')) return raw;
+  const upper = raw.toUpperCase();
+  const match = (typeof TRUCK_STOCK_CATALOG !== 'undefined')
+    ? TRUCK_STOCK_CATALOG.find(i => i.code === upper)
+    : null;
+  return match ? `${match.code} - ${match.desc}` : upper;
+}
+
+
 function addStockRow(qty, code) {
   const container = document.getElementById('stock-container');
   const row = document.createElement('div');
   row.className = 'item-row';
+  const displayVal = formatStockDisplay(code);
   row.innerHTML = `
     <input type="number" class="qty" placeholder="Qty" min="1" step="1" value="${qty}" inputmode="decimal" onchange="clampQty(this)">
-    <input type="text" class="code" placeholder="Search code or part name" value="${code}" oninput="filterStock(this)" onfocus="filterStock(this)">
+    <input type="text" class="code" placeholder="Search code or part name" value="${displayVal.replace(/"/g, '&quot;')}" oninput="filterStock(this)" onfocus="filterStock(this)">
     <button type="button" class="btn-remove" onclick="this.parentElement.remove()">X</button>
     <div class="search-dropdown" style="display:none;"></div>
   `;
   container.appendChild(row);
 }
+
 
 
 function filterStock(input) {
@@ -163,12 +177,11 @@ function filterStock(input) {
 
 function selectStock(optionEl, code) {
   const row = optionEl.closest('.item-row');
-  row.querySelector('.code').value = code;
+  row.querySelector('.code').value = formatStockDisplay(code);
   row.querySelector('.search-dropdown').style.display = 'none';
   const container = document.getElementById('stock-container');
   if (row === container.lastElementChild) addStockRow('', '');
 }
-
 
 
 document.addEventListener('click', e => {
@@ -319,27 +332,49 @@ function addVendorRow(qty, desc, part, price, vendor) {
   container.appendChild(row);
 }
 
-
 function checkKeywords() {
   const text = document.getElementById('desc').value.toLowerCase();
   for (const [keyword, template] of Object.entries(JOB_TEMPLATES)) {
     if (text.includes(keyword) && activeTrigger !== keyword) {
       activeTrigger = keyword;
-      document.getElementById('stock-container').innerHTML = '';
-      document.getElementById('vendor-parts-container').innerHTML = '';
+
+      const stockContainer = document.getElementById('stock-container');
+      if (stockContainer.lastElementChild && !stockContainer.lastElementChild.querySelector('.code').value.trim()) {
+        stockContainer.lastElementChild.remove();
+      }
+
+      const existingCodes = new Set(
+  [...stockContainer.querySelectorAll('.code')].map(el => el.value.split(' - ')[0].trim().toUpperCase())
+     );
+
+
       const autoRefr = detectRefrigerant();
       template.stockItems.forEach(item => {
-        addStockRow(item.qty, item.code === 'AUTO_REFR' ? autoRefr : item.code);
+        const finalCode = item.code === 'AUTO_REFR' ? autoRefr : item.code;
+        if (!existingCodes.has(finalCode.toUpperCase())) {
+          addStockRow(item.qty, finalCode);
+        }
       });
+
+      const vendorContainer = document.getElementById('vendor-parts-container');
+      const existingVendorDescs = new Set(
+        [...vendorContainer.querySelectorAll('.v-desc')].map(el => el.value.trim().toUpperCase())
+      );
+
       template.vendorParts.forEach(vp => {
-        addVendorRow(vp.qty, vp.desc || '', vp.part || '', vp.price || '', '');
+        const vDesc = (vp.desc || '').toUpperCase();
+        if (!vDesc || !existingVendorDescs.has(vDesc)) {
+          addVendorRow(vp.qty, vp.desc || '', vp.part || '', vp.price || '', '');
+        }
       });
+
       saveSessionState();
       return;
     }
   }
   if (activeTrigger && !text.includes(activeTrigger)) activeTrigger = '';
 }
+
    
 function captureCurrentUnit() {
   const unit = getUnitTag() || 'Unit';
@@ -356,19 +391,23 @@ function captureCurrentUnit() {
   const areaMatch = addrRaw.match(/\(([^)]+)\)\s*$/);
   const serviceArea = areaMatch ? areaMatch.at(1).trim() : '';
 
-  const stockRows = document.querySelectorAll('#stock-container .item-row');
+    const stockRows = document.querySelectorAll('#stock-container .item-row');
   let stockData = [], officePartLines = [], smPlusLines = [];
   stockRows.forEach(row => {
     const rawQty = row.querySelector('.qty').value.trim();
-    const code = row.querySelector('.code').value.trim().toUpperCase();
-    if (code) {
+    const rawText = row.querySelector('.code').value.trim();
+    if (rawText) {
+      const code = rawText.split(' - ').at(0).trim().toUpperCase();
+      const fullDisplay = formatStockDisplay(rawText);
       const numQty = parseFloat(rawQty);
       const dQty = (!isNaN(numQty) && numQty >= 1) ? String(numQty) : '1';
-      stockData.push({ qty: dQty, code });
-      officePartLines.push(`${dQty}--${code.toLowerCase()}`);
+
+      stockData.push({ qty: dQty, code: fullDisplay });
+      officePartLines.push(`${dQty}--${fullDisplay}`);
       smPlusLines.push(`${code}\t${dQty}`);
     }
   });
+
 
   const vendorRows = document.querySelectorAll('#vendor-parts-container .vendor-row');
   let vendorData = [], vendorPartLines = [];
