@@ -47,10 +47,84 @@ async function smartPaste() {
   }
 }
 
+function autoArchivePreviousUnitIfSwitching(raw) {
+  // Don't auto-archive if we're actively editing an existing batch pill
+  if (editingIndex >= 0) return false;
+
+  const curUnit = document.getElementById('unitTag')?.value.trim().toUpperCase() || '';
+  const curModel = document.getElementById('model')?.value.trim().toUpperCase() || '';
+  const curSerial = document.getElementById('serial')?.value.trim().toUpperCase() || '';
+  const curBrand = document.getElementById('brand')?.value.trim().toUpperCase() || '';
+
+  const hasExistingUnit = Boolean(curUnit || curModel || curSerial || curBrand);
+  if (!hasExistingUnit) return false;
+
+  // Check if current unit already has parts, findings, or labor entered
+  const cur = captureCurrentUnit().rawFields || {};
+  const hasWorkEntered = Boolean(
+    cur.desc || cur.laborNotes ||
+    (cur.stockData && cur.stockData.length > 0) ||
+    (cur.vendorData && cur.vendorData.length > 0)
+  );
+  if (!hasWorkEntered) return false;
+
+  // Detect incoming unit identity from the pasted text
+  const incomingModel = (grabMatch(raw, /Model[\s:\-#]+([A-Z0-9\-]+)/i) || '').toUpperCase();
+  const incomingSerial = (grabMatch(raw, /Serial[\s:\-#]+([A-Z0-9\-]+)/i) || '').toUpperCase();
+  const unitLine = raw.split(/\r?\n/).map(l => l.trim()).find(l => /^(AC|RTU|CU|AHU|EF|MAU|WIC|WIF|REACH|ICE)[\s\-]*\d+/i.test(l)) || '';
+  const incomingUnit = (grabMatch(unitLine, /^([A-Z]+[\s\-]*\d+)/i) || '').toUpperCase();
+
+  const isDifferentUnit =
+    (incomingUnit && curUnit && incomingUnit !== curUnit) ||
+    (incomingModel && curModel && incomingModel !== curModel) ||
+    (incomingSerial && curSerial && incomingSerial !== curSerial);
+
+  if (isDifferentUnit) {
+    const finishedUnit = captureCurrentUnit();
+    unitBatch.push(finishedUnit);
+    resetUnitFields();
+    updateBatchUI();
+    return true;
+  }
+  return false;
+}
+
+let manualUnitHintShown = false;
+
+function showManualBatchToast() {
+  if (editingIndex >= 0 || manualUnitHintShown) return;
+  const cur = captureCurrentUnit().rawFields || {};
+  const hasWorkEntered = Boolean(
+    cur.desc || cur.laborNotes ||
+    (cur.stockData && cur.stockData.length > 0) ||
+    (cur.vendorData && cur.vendorData.length > 0)
+  );
+  if (!hasWorkEntered) return;
+
+  manualUnitHintShown = true;
+  let toast = document.getElementById('manual-batch-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'manual-batch-toast';
+    toast.style.cssText = 'position:fixed; top:14px; left:50%; transform:translateX(-50%); background:#1e293b; color:#ffca28; border:1px solid #ffca28; padding:10px 16px; border-radius:8px; font-size:14px; font-weight:bold; z-index:9999; box-shadow:0 4px 12px rgba(0,0,0,0.6); max-width:90%; text-align:center;';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = 'If this is a new unit, tap "+ Add Unit to Batch" first!';
+  toast.style.display = 'block';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => { toast.style.display = 'none'; }, 5000);
+}
+
+
 function parseText(raw) {
   let updated = [];
   const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   
+  const autoSavedPrev = autoArchivePreviousUnitIfSwitching(raw);
+  if (autoSavedPrev) {
+    updated.push('Auto-saved previous unit to batch');
+  }
+
   if (/\bREFR(IGERATION)?\b/i.test(raw)) lastSystemType = 'REFR';
   else if (/\bHVAC\b/i.test(raw)) lastSystemType = 'HVAC';
 
@@ -605,6 +679,7 @@ function resetUnitFields() {
   document.getElementById('vendor-parts-container').innerHTML = '';
   activeTrigger = '';
   triggeredVendorKeywords.clear();
+  manualUnitHintShown = false;
   addStockRow('', '');
 }
 
@@ -1046,10 +1121,14 @@ function confirmNewJob() {
   document.getElementById('paste-status').textContent = 'Cleared for new job.';
   updateBatchUI();
 }
+
 window.addEventListener('DOMContentLoaded', () => {
   renderTemplatePills();
   renderCategoryButtons();
   restoreSessionState();
+  ['unitTag', 'model', 'serial'].forEach(id => {
+    document.getElementById(id)?.addEventListener('focus', showManualBatchToast);
+  });
   document.body.addEventListener('input', saveSessionState);
   document.body.addEventListener('click', () => setTimeout(saveSessionState, 50));
 });
