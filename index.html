@@ -241,7 +241,7 @@
     <div id="vendor-parts-container"></div>
   </div>
 
-    <!-- MULTI-UNIT BATCH BAR -->
+      <!-- MULTI-UNIT BATCH BAR -->
   <div class="section" style="border-color: #2b5b84;">
     <div class="section-title" style="margin-bottom: 6px;">Multi-Unit Batch</div>
     <div class="grid-2">
@@ -252,16 +252,13 @@
     <div id="batch-status" class="paste-status" style="margin-top: 8px;">Batch: 0 units (will send current unit)</div>
   </div>
 
-    <div id="batch-pills" class="pill-bar"></div>
-    <div id="batch-status" class="paste-status" style="margin-top: 8px;">Batch: 0 units (will send current unit)</div>
-  </div>
-
   <div class="actions">
-    <div id="vendor-buttons-container" style="display:flex; flex-direction:column; gap:10px;"></div>
-    <button type="button" class="btn-vendor" id="btn-email-office" style="background:#00695c; border-color:#26a69a;" onclick="emailOffice()">Email Quote to Office</button>
+    <button type="button" class="btn-primary" style="background:#00695c; margin-top:12px;" onclick="openVendorPicker()">Email Vendor</button>
+    <button type="button" id="btn-email-office" class="btn-primary" style="background:#1565c0; margin-top:10px;" onclick="emailOffice()">Email Quote to Office</button>
     <button type="button" class="btn-primary" onclick="generateOutput()">Generate Quote & Copy</button>
     <button type="button" class="btn-secondary" onclick="downloadFile()">Save .TXT File (For OneDrive)</button>
   </div>
+
 
   <textarea id="output" class="output-box" style="display:none;" readonly></textarea>
     <div id="stock-modal" class="modal-backdrop" style="display:none;" onclick="if(event.target===this) closeStockModal()">
@@ -276,6 +273,7 @@
   </div>
 
   <script src="inventory.js"></script>
+  <script src="emails.js"></script>
   <script src="rules.js"></script>
   <script src="app.js"></script>
 </body>

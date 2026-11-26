@@ -29,9 +29,10 @@ function getEmailSubjectPrefix(overrideUnit) {
   const cust = document.getElementById('cust').value.trim();
   const unit = overrideUnit !== undefined
     ? overrideUnit
-    : (unitBatch.length > 0 ? unitBatch.map(u => u.label).join(', ') : getUnitTag());
+    : getAllWorkingUnits().map(u => u.label).join(', ');
   return [wo, unit, cust].filter(Boolean).join(' ') || 'HVACR Quote';
 }
+
 
              
 async function smartPaste() {
@@ -231,17 +232,20 @@ function getPartIcon(code) {
       <rect x="19" y="16" width="8" height="14" fill="#d4af37" fill-opacity="0.7"/>
     `);
   }
-
-  // Female Spade Slide-On Terminals (Yellow 12-10 / #10)
+  
+    // Female Spade Slide-On Terminals (ETFC1210 = Blue, EFC10 = Yellow)
   if (code === 'ETFC1210' || code === 'EFC10') {
+    const sleeve = code === 'ETFC1210' ? '#29b6f6' : '#ffca28';
     return wrap(`
       <line x1="5" y1="23" x2="14" y2="23" stroke="#90a4ae" stroke-width="3" stroke-linecap="round"/>
-      <rect x="13" y="17" width="13" height="12" rx="2" fill="#ffca28" stroke="#fff" stroke-width="1"/>
+      <rect x="13" y="17" width="13" height="12" rx="2" fill="${sleeve}" stroke="#fff" stroke-width="1"/>
       <path d="M26 15 L40 15 L40 31 L26 31 Z" fill="#cfd8dc" stroke="#90a4ae" stroke-width="1.2"/>
       <line x1="28" y1="20" x2="39" y2="20" stroke="#37474f" stroke-width="1.5"/>
       <line x1="28" y1="26" x2="39" y2="26" stroke="#37474f" stroke-width="1.5"/>
     `);
   }
+
+  
 
   // Ring Terminals (Blue 16-14, Yellow 12-10)
   if (code === 'ETRING1614' || code === 'ETRING1210') {
@@ -271,15 +275,13 @@ function getPartIcon(code) {
   return '';
 }
 
-
-
 function openStockCategory(category) {
   modalSelectedCodes.clear();
   document.getElementById('stock-modal-title').textContent = `${category} — Tap to Select`;
   const listEl = document.getElementById('stock-modal-list');
   const items = TRUCK_STOCK_CATALOG.filter(i => i.category === category);
 
-    listEl.innerHTML = items.map(item => `
+  listEl.innerHTML = items.map(item => `
     <label class="modal-item">
       <input type="checkbox" value="${item.code}" onchange="toggleModalCode('${item.code}', this.checked)">
       ${getPartIcon(item.code)}
@@ -290,10 +292,13 @@ function openStockCategory(category) {
     </label>
   `).join('');
 
-
+  const addBtn = document.getElementById('btn-add-selected-stock');
+  addBtn.style.display = 'block';
+  addBtn.onclick = confirmStockModal;
   updateModalCount();
   document.getElementById('stock-modal').style.display = 'flex';
 }
+
 
 function toggleModalCode(code, isChecked) {
   if (isChecked) modalSelectedCodes.add(code);
@@ -321,22 +326,77 @@ function confirmStockModal() {
   saveSessionState();
 }
 
-
 function addVendorRow(qty, desc, part, price, vendor) {
   const defaultVendor = vendor || document.getElementById('brand').value.trim().toUpperCase();
   const container = document.getElementById('vendor-parts-container');
   const row = document.createElement('div');
   row.className = 'item-row vendor-row';
   row.innerHTML = `
-    <input type="number" class="v-qty" placeholder="Qty" min="1" step="any" value="${qty}" inputmode="decimal" onchange="clampQty(this)">
+    <input type="number" class="v-qty" placeholder="Qty" min="1" step="1" value="${qty}" inputmode="decimal" onchange="clampQty(this)">
     <input type="text" class="v-desc" placeholder="Description" value="${desc}">
     <input type="text" class="v-part" placeholder="Part #" value="${part}">
     <input type="text" class="v-price" placeholder="Price $" value="${price}" inputmode="decimal">
-    <input type="text" class="v-vendor" placeholder="Vendor" value="${defaultVendor}">
+    <input type="text" class="v-vendor" placeholder="Tap Vendor" value="${defaultVendor}" readonly style="cursor:pointer; color:#4da3ff; font-weight:bold;" onclick="openRowVendorPicker(this)">
     <button type="button" class="btn-remove" onclick="this.parentElement.remove()">X</button>
   `;
   container.appendChild(row);
 }
+
+function openRowVendorPicker(inputEl) {
+  const emailVendors = (typeof EMAIL_DIRECTORY !== 'undefined')
+    ? Object.keys(EMAIL_DIRECTORY).filter(k => k !== 'OFFICE')
+    : [];
+  const localStores = ['HOME DEPOT', 'GRAINGER', 'JOHNSTONE', 'LOWES'];
+  const allChoices = [...new Set([...emailVendors, ...localStores])];
+
+  document.getElementById('stock-modal-title').textContent = 'Select Vendor / Store';
+  const listEl = document.getElementById('stock-modal-list');
+  const addBtn = document.getElementById('btn-add-selected-stock');
+  addBtn.style.display = 'none';
+
+  listEl.innerHTML = allChoices.map(v => {
+    const isEmailVendor = emailVendors.includes(v);
+    const badge = isEmailVendor ? 'Email Vendor' : 'Local Store (Office Email Only)';
+    return `
+      <button type="button" class="modal-item" style="color:#fff; font-size:16px; text-align:left; width:100%;" data-vendor="${v}">
+        <div>
+          <strong style="color:#4da3ff;">${v}</strong><br>
+          <span style="font-size:12px; color:#aaa;">${badge}</span>
+        </div>
+      </button>
+    `;
+  }).join('') + `
+    <button type="button" class="modal-item" style="color:#fff; font-size:16px; text-align:left; width:100%;" data-vendor="__CUSTOM__">
+      <div>
+        <strong style="color:#ffd54f;">Type Custom Vendor...</strong><br>
+        <span style="font-size:12px; color:#aaa;">Enter any other supply house or store</span>
+      </div>
+    </button>
+  `;
+
+  listEl.querySelectorAll('button').forEach(btn => {
+    btn.onclick = () => {
+      const chosen = btn.dataset.vendor;
+      addBtn.style.display = 'block';
+      closeStockModal();
+      if (chosen === '__CUSTOM__') {
+        inputEl.removeAttribute('readonly');
+        inputEl.style.color = '#fff';
+        inputEl.value = '';
+        inputEl.focus();
+      } else {
+        inputEl.setAttribute('readonly', true);
+        inputEl.style.color = '#4da3ff';
+        inputEl.value = chosen;
+      }
+      saveSessionState();
+    };
+  });
+
+  document.getElementById('stock-modal').style.display = 'flex';
+}
+
+
 
 function checkKeywords() {
   const text = document.getElementById('desc').value.toLowerCase();
@@ -568,38 +628,32 @@ function updateBatchUI() {
   const clearBtn = document.getElementById('btn-clear-batch');
   const pillsEl = document.getElementById('batch-pills');
   const officeBtn = document.getElementById('btn-email-office');
-  const vendorContainer = document.getElementById('vendor-buttons-container');
 
-  actionBtn.textContent = editingIndex >= 0 ? `Update ${unitBatch[editingIndex].label} in Batch` : '+ Add Unit to Batch';
+  if (actionBtn) {
+    actionBtn.textContent = editingIndex >= 0 ? `Update ${unitBatch[editingIndex].label} in Batch` : '+ Add Unit to Batch';
+  }
   if (clearBtn) {
     clearBtn.textContent = editingIndex >= 0 ? `Remove ${unitBatch[editingIndex].label}` : 'Clear All';
     clearBtn.onclick = editingIndex >= 0 ? () => removeBatchUnit(editingIndex) : clearBatch;
   }
 
-  pillsEl.innerHTML = unitBatch.map((u, i) => `
-    <div class="batch-pill ${i === editingIndex ? 'editing' : ''}" onclick="recallBatchUnit(${i})">
-      <span>${u.label} (${u.brand})</span>
-      <span class="pill-del" title="Remove unit" onclick="removeBatchUnit(${i}, event)">&times;</span>
-    </div>
-  `).join('');
+  if (pillsEl) {
+    pillsEl.innerHTML = unitBatch.map((u, i) => `
+      <div class="batch-pill ${i === editingIndex ? 'editing' : ''}" onclick="recallBatchUnit(${i})">
+        <span>${u.label} (${u.brand})</span>
+        <span class="pill-del" title="Remove unit" onclick="removeBatchUnit(${i}, event)">&times;</span>
+      </div>
+    `).join('');
+  }
 
-  const items = unitBatch.length > 0 ? unitBatch : [captureCurrentUnit()];
-  statusEl.textContent = unitBatch.length === 0
-    ? 'Batch: 0 units (will send current unit)'
-    : `Tap a unit pill to edit, or tap × to remove (${unitBatch.length} batched):`;
-  officeBtn.textContent = unitBatch.length > 0 ? `Email Quote to Office (${unitBatch.length} Units)` : 'Email Quote to Office';
-
-  const brands = [...new Set(items.map(u => u.brand))];
-  vendorContainer.innerHTML = '';
-  brands.forEach(brandName => {
-    const count = items.filter(u => u.brand === brandName).length;
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'btn-vendor';
-    btn.textContent = count > 1 ? `Email ${brandName} (${count} Units)` : `Email ${brandName} for Price & Availability`;
-    btn.onclick = () => emailVendorByBrand(brandName);
-    vendorContainer.appendChild(btn);
-  });
+  if (statusEl) {
+    statusEl.textContent = unitBatch.length === 0
+      ? 'Batch: 0 units (will send current unit)'
+      : `Tap a unit pill to edit, or tap × to remove (${unitBatch.length} batched):`;
+  }
+  if (officeBtn) {
+    officeBtn.textContent = unitBatch.length > 0 ? `Email Quote to Office (${unitBatch.length} Units)` : 'Email Quote to Office';
+  }
 }
 
 
@@ -620,32 +674,219 @@ function launchEmail(subject, body, toAddress = '', ccAddress = '') {
   window.location.href = `mailto:${encodeURIComponent(toAddress)}?${params.join('&')}`;
 }
 
-function emailVendorByBrand(targetBrand) {
-  const items = unitBatch.length > 0 ? unitBatch : [captureCurrentUnit()];
-  const matching = items.filter(u => u.brand === targetBrand);
-  const subject = getEmailSubjectPrefix(matching.map(u => u.label).join(', '));
+function openEmailBranchPicker(title, entries, onPick) {
+  document.getElementById('stock-modal-title').textContent = title;
+  const listEl = document.getElementById('stock-modal-list');
+  const addBtn = document.getElementById('btn-add-selected-stock');
+  addBtn.style.display = 'none';
 
-  const toEmail = (typeof VENDOR_EMAILS !== 'undefined' && VENDOR_EMAILS[targetBrand])
-    ? VENDOR_EMAILS[targetBrand]
-    : '';
-  const ccEmail = (typeof OFFICE_EMAIL !== 'undefined') ? OFFICE_EMAIL : '';
+  listEl.innerHTML = entries.map((entry, idx) => `
+    <button type="button" class="modal-item" style="color:#fff; font-size:16px; text-align:left; width:100%;" data-idx="${idx}">
+      <div>
+        <strong style="color:#4da3ff;">${entry.label}</strong><br>
+        <span style="font-size:13px; color:#aaa;">${entry.email}</span>
+      </div>
+    </button>
+  `).join('');
 
-  const body = [
-    `Need price and availability on:`,
-    ``,
-    matching.map(u => u.vendorText).join('\n\n------------------------------\n\n')
-  ].join('\n');
+  listEl.querySelectorAll('button').forEach(btn => {
+    btn.onclick = () => {
+      const picked = entries[Number(btn.dataset.idx)];
+      addBtn.style.display = 'block';
+      closeStockModal();
+      onPick(picked.email);
+    };
+  });
 
-  launchEmail(subject, body, toEmail, ccEmail);
+  document.getElementById('stock-modal').style.display = 'flex';
 }
 
+function openVendorPicker() {
+  if (typeof EMAIL_DIRECTORY === 'undefined') return;
+  const vendors = Object.keys(EMAIL_DIRECTORY).filter(k => k !== 'OFFICE');
+  document.getElementById('stock-modal-title').textContent = 'Select Vendor to Email';
+  const listEl = document.getElementById('stock-modal-list');
+  const addBtn = document.getElementById('btn-add-selected-stock');
+  addBtn.style.display = 'none';
+
+  listEl.innerHTML = vendors.map(v => {
+    const count = EMAIL_DIRECTORY[v].length;
+    const sub = count > 1 ? `${count} branches` : EMAIL_DIRECTORY[v].at(0).email;
+    return `
+      <button type="button" class="modal-item" style="color:#fff; font-size:16px; text-align:left; width:100%;" onclick="sendVendorQuoteEmail('${v}')">
+        <div>
+          <strong style="color:#4da3ff;">${v}</strong><br>
+          <span style="font-size:13px; color:#aaa;">${sub}</span>
+        </div>
+      </button>
+    `;
+  }).join('');
+
+  document.getElementById('stock-modal').style.display = 'flex';
+}
+
+function getAllWorkingUnits() {
+  const list = [...unitBatch];
+  const cur = captureCurrentUnit();
+  const f = cur.rawFields || {};
+  const hasActiveData = Boolean(
+    f.unitTag || f.model || f.serial || f.desc || f.laborNotes ||
+    (f.stockData && f.stockData.length > 0) ||
+    (f.vendorData && f.vendorData.length > 0)
+  );
+
+  // If the current screen has data and isn't already saved at editingIndex, include it automatically
+  if (editingIndex >= 0 && list[editingIndex]) {
+    list[editingIndex] = cur;
+  } else if (hasActiveData) {
+    const alreadyInBatch = list.some(u => u.label === cur.label && u.rawFields?.serial === f.serial);
+    if (!alreadyInBatch) list.push(cur);
+  }
+  return list.length > 0 ? list : [cur];
+}
+
+
+function buildVendorUnitBlock(unitObj, targetVendor) {
+  const f = unitObj.rawFields || {};
+  const vRows = f.vendorData || [];
+  const unitBrand = (unitObj.brand || '').toUpperCase();
+
+  // Keep only non-stock parts assigned to targetVendor (or blank vendor when unit brand matches)
+  const matchingParts = vRows.filter(p => {
+    const rowVendor = (p.vendor || '').trim().toUpperCase();
+    if (rowVendor) return rowVendor === targetVendor || rowVendor.includes(targetVendor) || targetVendor.includes(rowVendor);
+    return unitBrand === targetVendor;
+  });
+
+  if (matchingParts.length === 0) return null;
+
+  const partLines = matchingParts.map(p => {
+    const label = [p.desc, p.part ? `P/N: ${p.part}` : ''].filter(Boolean).join(' ');
+    return `${p.qty}--${label}`;
+  });
+
+  const addrRaw = document.getElementById('addr')?.value.trim() || '';
+  const areaMatch = addrRaw.match(/\(([^)]+)\)\s*$/);
+  const serviceArea = areaMatch ? areaMatch.at(1).trim() : '';
+
+  const specLines = [
+    unitObj.label,
+    `Make: ${unitBrand || 'N/A'}`,
+    f.model ? `Model: ${f.model.toUpperCase()}` : '',
+    f.serial ? `Serial #: ${f.serial.toUpperCase()}` : '',
+    f.equipDesc ? `Description: ${f.equipDesc.toUpperCase()}` : '',
+    serviceArea ? `Service Area: ${serviceArea}` : '',
+    f.year ? `Year: ${f.year}` : ''
+  ].filter(Boolean).join('\n');
+
+  return {
+    label: unitObj.label,
+    text: `${unitObj.label}:\n${partLines.join('\n')}\n\n${specLines}`
+  };
+}
+
+function sendVendorQuoteEmail(targetVendor) {
+  const items = getAllWorkingUnits();
+
+  // 1. Strictly match parts assigned to targetVendor (or blank vendor when unit brand matches)
+  let eligible = items
+    .map(u => buildVendorUnitBlock(u, targetVendor))
+    .filter(Boolean);
+
+  // 2. Only fall back to "all non-stock parts" if targetVendor is a general supply house
+  //    (not an equipment manufacturer in KNOWN_BRANDS) and no rows were tagged for it
+  const isEquipBrand = (typeof KNOWN_BRANDS !== 'undefined') && KNOWN_BRANDS.includes(targetVendor);
+  if (eligible.length === 0 && !isEquipBrand) {
+    const withAnyVendorParts = items.filter(u => u.rawFields?.vendorData?.length > 0);
+    const fallbackUnits = withAnyVendorParts.length > 0 ? withAnyVendorParts : items;
+    eligible = fallbackUnits.map(u => ({ label: u.label, text: u.vendorText }));
+  }
+
+  if (eligible.length === 0) {
+    alert(`No non-truck-stock parts are assigned to ${targetVendor}.`);
+    return;
+  }
+
+  const proceedWithSelectedUnits = (chosenBlocks) => {
+    const subject = getEmailSubjectPrefix(chosenBlocks.map(u => u.label).join(', '));
+    const officeList = (typeof EMAIL_DIRECTORY !== 'undefined' && EMAIL_DIRECTORY.OFFICE) || [];
+    const ccEmail = officeList.length ? officeList.at(0).email : '';
+
+    const sendWithTo = (toEmail) => {
+      document.getElementById('btn-add-selected-stock').style.display = 'block';
+      closeStockModal();
+      const body = [
+        `Need price and availability on:`,
+        ``,
+        chosenBlocks.map(u => u.text).join('\n\n------------------------------\n\n')
+      ].join('\n');
+      launchEmail(subject, body, toEmail, ccEmail);
+    };
+
+    const entries = (typeof EMAIL_DIRECTORY !== 'undefined' && EMAIL_DIRECTORY[targetVendor]) || [];
+    if (entries.length > 1) {
+      openEmailBranchPicker(`Select ${targetVendor} Branch`, entries, sendWithTo);
+    } else {
+      sendWithTo(entries.length === 1 ? entries.at(0).email : '');
+    }
+  };
+
+  if (eligible.length > 1) {
+    document.getElementById('stock-modal-title').textContent = `Units to Include for ${targetVendor}`;
+    const listEl = document.getElementById('stock-modal-list');
+    const addBtn = document.getElementById('btn-add-selected-stock');
+    addBtn.style.display = 'block';
+    addBtn.textContent = `Continue (${eligible.length})`;
+
+    listEl.innerHTML = eligible.map((u, idx) => `
+      <label class="modal-item">
+        <input type="checkbox" class="unit-pick-cb" value="${idx}" checked>
+        <div>
+          <strong style="color:#4da3ff;">${u.label}</strong><br>
+          <span style="font-size:13px; color:#ccc;">${u.text.split('\n').slice(1, 3).join(', ')}</span>
+        </div>
+      </label>
+    `).join('');
+
+    listEl.querySelectorAll('.unit-pick-cb').forEach(cb => {
+      cb.onchange = () => {
+        const count = listEl.querySelectorAll('.unit-pick-cb:checked').length;
+        addBtn.textContent = `Continue (${count})`;
+      };
+    });
+
+    addBtn.onclick = () => {
+      const checkedIndices = [...listEl.querySelectorAll('.unit-pick-cb:checked')].map(cb => Number(cb.value));
+      if (checkedIndices.length === 0) return;
+      addBtn.onclick = confirmStockModal;
+      proceedWithSelectedUnits(checkedIndices.map(i => eligible[i]));
+    };
+
+    document.getElementById('stock-modal').style.display = 'flex';
+  } else {
+    proceedWithSelectedUnits(eligible);
+  }
+}
+
+
+
+
+  
+
 function emailOffice() {
-  const toEmail = (typeof OFFICE_EMAIL !== 'undefined') ? OFFICE_EMAIL : '';
-  launchEmail(getEmailSubjectPrefix(), buildQuoteText(), toEmail);
+  const officeList = (typeof EMAIL_DIRECTORY !== 'undefined' && EMAIL_DIRECTORY.OFFICE) || [];
+  if (officeList.length > 1) {
+    openEmailBranchPicker('Select Office', officeList, (toEmail) => {
+      launchEmail(getEmailSubjectPrefix(), buildQuoteText(), toEmail);
+    });
+  } else {
+    const toEmail = officeList.length === 1 ? officeList.at(0).email : '';
+    launchEmail(getEmailSubjectPrefix(), buildQuoteText(), toEmail);
+  }
 }
 
 function buildQuoteText() {
-  const items = unitBatch.length > 0 ? unitBatch : [captureCurrentUnit()];
+  const items = getAllWorkingUnits();
 
   const smPlusAll = items
     .filter(u => u.smPlusLines && u.smPlusLines.length > 0)
