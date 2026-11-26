@@ -215,6 +215,47 @@ function renderCategoryButtons() {
   ).join('');
 }
 
+function renderTemplatePills() {
+  const bar = document.getElementById('template-pill-bar');
+  if (!bar || typeof STOCK_TEMPLATES === 'undefined') return;
+  bar.innerHTML = Object.keys(STOCK_TEMPLATES).map(name =>
+    `<button type="button" class="cat-pill" style="border-color:#2e7d32; color:#81c784;" onclick="applyStockTemplate('${name}')">+ ${name}</button>`
+  ).join('');
+}
+
+function applyStockTemplate(templateName) {
+  const items = (typeof STOCK_TEMPLATES !== 'undefined') ? STOCK_TEMPLATES[templateName] : null;
+  if (!items) return;
+
+  const stockContainer = document.getElementById('stock-container');
+  if (stockContainer.lastElementChild && !stockContainer.lastElementChild.querySelector('.code').value.trim()) {
+    stockContainer.lastElementChild.remove();
+  }
+
+  const existingCodes = new Set(
+    [...stockContainer.querySelectorAll('.code')].map(el => el.value.split(' - ').at(0).trim().toUpperCase())
+  );
+
+  const autoRefr = detectRefrigerant();
+  items.forEach(item => {
+    const finalCode = item.code === 'AUTO_REFR' ? autoRefr : item.code;
+    if (!existingCodes.has(finalCode.toUpperCase())) {
+      addStockRow(item.qty, finalCode);
+    }
+  });
+
+  addStockRow('', '');
+  saveSessionState();
+}
+
+
+
+
+
+
+
+
+
 function getPartIcon(code) {
   const wrap = (inner) => `<svg width="46" height="46" viewBox="0 0 46 46" xmlns="http://w3.org" style="background:#161616; border-radius:8px; border:1px solid #3a3a3a; flex-shrink:0;">${inner}</svg>`;
 
@@ -413,50 +454,39 @@ function openRowVendorPicker(inputEl) {
   document.getElementById('stock-modal').style.display = 'flex';
 }
 
-
+let triggeredVendorKeywords = new Set();
 
 function checkKeywords() {
+  if (typeof VENDOR_KEYWORD_RULES === 'undefined') return;
   const text = document.getElementById('desc').value.toLowerCase();
-  for (const [keyword, template] of Object.entries(JOB_TEMPLATES)) {
-    if (text.includes(keyword) && activeTrigger !== keyword) {
-      activeTrigger = keyword;
 
-      const stockContainer = document.getElementById('stock-container');
-      if (stockContainer.lastElementChild && !stockContainer.lastElementChild.querySelector('.code').value.trim()) {
-        stockContainer.lastElementChild.remove();
+  for (const [keyword, partsList] of Object.entries(VENDOR_KEYWORD_RULES)) {
+    if (text.includes(keyword)) {
+      if (!triggeredVendorKeywords.has(keyword)) {
+        triggeredVendorKeywords.add(keyword);
+
+        const vendorContainer = document.getElementById('vendor-parts-container');
+        const existingDescs = new Set(
+          [...vendorContainer.querySelectorAll('.v-desc')].map(el => el.value.trim().toUpperCase())
+        );
+
+        partsList.forEach(vp => {
+          const upperDesc = (vp.desc || '').toUpperCase();
+          if (!upperDesc || !existingDescs.has(upperDesc)) {
+            addVendorRow(vp.qty, vp.desc || '', vp.part || '', '', '');
+          }
+        });
+        saveSessionState();
       }
-
-      const existingCodes = new Set(
-  [...stockContainer.querySelectorAll('.code')].map(el => el.value.split(' - ')[0].trim().toUpperCase())
-     );
-
-
-      const autoRefr = detectRefrigerant();
-      template.stockItems.forEach(item => {
-        const finalCode = item.code === 'AUTO_REFR' ? autoRefr : item.code;
-        if (!existingCodes.has(finalCode.toUpperCase())) {
-          addStockRow(item.qty, finalCode);
-        }
-      });
-
-      const vendorContainer = document.getElementById('vendor-parts-container');
-      const existingVendorDescs = new Set(
-        [...vendorContainer.querySelectorAll('.v-desc')].map(el => el.value.trim().toUpperCase())
-      );
-
-      template.vendorParts.forEach(vp => {
-        const vDesc = (vp.desc || '').toUpperCase();
-        if (!vDesc || !existingVendorDescs.has(vDesc)) {
-          addVendorRow(vp.qty, vp.desc || '', vp.part || '', vp.price || '', '');
-        }
-      });
-
-      saveSessionState();
-      return;
+    } else {
+      // Reset if tech deletes the phrase so re-typing it later works again
+      triggeredVendorKeywords.delete(keyword);
     }
   }
-  if (activeTrigger && !text.includes(activeTrigger)) activeTrigger = '';
 }
+
+
+
 
    
 function captureCurrentUnit() {
@@ -574,6 +604,7 @@ function resetUnitFields() {
   document.getElementById('stock-container').innerHTML = '';
   document.getElementById('vendor-parts-container').innerHTML = '';
   activeTrigger = '';
+  triggeredVendorKeywords.clear();
   addStockRow('', '');
 }
 
@@ -1016,6 +1047,7 @@ function confirmNewJob() {
   updateBatchUI();
 }
 window.addEventListener('DOMContentLoaded', () => {
+  renderTemplatePills();
   renderCategoryButtons();
   restoreSessionState();
   document.body.addEventListener('input', saveSessionState);
