@@ -55,7 +55,14 @@ function parseText(raw) {
 
     const woVal = grabMatch(raw, /(?:WO|Work\s*Order)\s*#?\s*[:\-]?\s*([A-Z0-9\-]+)/i);
   const poVal = grabMatch(raw, /(?:Cust(?:omer)?\s*)?PO\s*#?\s*[:\-]?\s*([A-Z0-9\-]+)/i);
-
+  if (woVal) {
+    document.getElementById('wo').value = woVal;
+    updated.push('WO #');
+  }
+  if (poVal) {
+    document.getElementById('po').value = poVal;
+    updated.push('PO #');
+  }
 
   let newBrand = '';
   const makeVal = grabMatch(raw, /Make[\s:\-]+(.+)/i);
