@@ -548,7 +548,8 @@ function addVendorRow(qty, desc, part, price, vendor) {
     <input type="text" class="v-desc" placeholder="Description" value="${desc}">
     <input type="text" class="v-part" placeholder="Part #" value="${part}">
     <input type="text" class="v-price" placeholder="Price $" value="${price}" inputmode="decimal">
-    <input type="text" class="v-vendor" placeholder="Tap Vendor" value="${defaultVendor}" readonly style="cursor:pointer; color:#4da3ff; font-weight:bold;" onclick="openRowVendorPicker(this)">
+    <input type="text" class="v-vendor" placeholder="Tap Vendor" value="${defaultVendor}" readonly style="cursor:pointer; color:#4da3ff; font-weight:bold;" onclick="if (this.hasAttribute('readonly')) openRowVendorPicker(this)">
+
     <button type="button" class="btn-remove" onclick="this.parentElement.remove()">X</button>
   `;
   container.appendChild(row);
@@ -595,7 +596,15 @@ function openRowVendorPicker(inputEl) {
         inputEl.removeAttribute('readonly');
         inputEl.style.color = '#fff';
         inputEl.value = '';
-        inputEl.focus();
+        inputEl.placeholder = 'Type vendor...';
+        inputEl.onblur = () => {
+          if (!inputEl.value.trim()) {
+            inputEl.setAttribute('readonly', true);
+            inputEl.style.color = '#4da3ff';
+            inputEl.placeholder = 'Tap Vendor';
+          }
+        };
+        setTimeout(() => inputEl.focus(), 50);
       } else {
         inputEl.setAttribute('readonly', true);
         inputEl.style.color = '#4da3ff';
@@ -607,6 +616,7 @@ function openRowVendorPicker(inputEl) {
 
   document.getElementById('stock-modal').style.display = 'flex';
 }
+
 
 let triggeredVendorKeywords = new Set();
 

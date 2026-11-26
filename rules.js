@@ -1,28 +1,38 @@
 const STOCK_TEMPLATES = {
   'Weld Template': [
-    { qty: '2', code: '15SS' },
+    { qty: '1', code: '15SS' },
     { qty: '1', code: 'OXY' },
-    { qty: '1', code: 'ACET' },
+    { qty: '1', code: 'ACE' },
     { qty: '1', code: 'NITRO' },
+    { qty: '1', code: 'SCL' },
+    { qty: '1', code: '3816SWD' },
     { qty: '1', code: 'THTRP' }
   ],
-  'TXV / Drier Kit': [
-    { qty: '1', code: 'AUTO_REFR' },
+
+  'Compressor Template': [
+    
     { qty: '2', code: '15SS' },
     { qty: '1', code: 'OXY' },
-    { qty: '1', code: 'ACET' },
+    { qty: '1', code: 'ACE' },
     { qty: '1', code: 'NITRO' },
+    { qty: '1', code: 'SCL' }, 
+    { qty: '1', code: '3816SWD' },
+    { qty: '2', code: 'VCORE' },
+    { qty: '2', code: 'VALCAP' },
+    { qty: '1', code: 'RX11LG' },
     { qty: '1', code: 'THTRP' },
-    { qty: '1', code: '388' }
+    { qty: '1', code: '3P40A24V' },
+    { qty: '1', code: 'EPAFEES' }
   ],
-  'Bi-Flo Heat Pump Kit': [
-    { qty: '1', code: 'AUTO_REFR' },
-    { qty: '2', code: '15SS' },
-    { qty: '1', code: 'OXY' },
-    { qty: '1', code: 'ACET' },
-    { qty: '1', code: 'NITRO' },
-    { qty: '1', code: 'THTRP' },
-    { qty: '1', code: '1216BFWD' }
+
+  'Master Tech Special': [
+    { qty: '1', code: 'LOBSTER' },
+    { qty: '2', code: 'CHEDDAR BISCUITS' },
+    { qty: '1', code: 'MIND ERASER' },
+    { qty: '1', code: 'BAKED POTATOE' },
+    { qty: '1', code: 'ROASTED VEGGIES' },
+    { qty: '1', code: 'CHEESCAKE' },
+    { qty: '1', code: 'THEO PAYS' }
   ]
 };
 
