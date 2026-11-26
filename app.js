@@ -279,14 +279,48 @@ document.addEventListener('click', e => {
 });
 
 let modalSelectedCodes = new Set();
+let showAllCategories = false;
+
+function toggleMoreCategories() {
+  showAllCategories = !showAllCategories;
+  renderCategoryButtons();
+}
 
 function renderCategoryButtons() {
   const bar = document.getElementById('stock-category-bar');
   if (!bar || typeof TRUCK_STOCK_CATALOG === 'undefined') return;
-  const categories = [...new Set(TRUCK_STOCK_CATALOG.map(item => item.category))];
-  bar.innerHTML = categories.map(cat =>
+
+
+  const allCats = [];
+  let moreCutoffIndex = -1;
+
+  TRUCK_STOCK_CATALOG.forEach(item => {
+    const cat = (item.category || '').trim();
+    if (!cat) return;
+    if (cat.toUpperCase() === 'MORE') {
+      if (moreCutoffIndex === -1) moreCutoffIndex = allCats.length;
+    } else if (!allCats.includes(cat)) {
+      allCats.push(cat);
+    }
+  });
+
+
+  const hasMore = moreCutoffIndex > 0 && moreCutoffIndex < allCats.length;
+  const visibleCats = (hasMore && !showAllCategories)
+    ? allCats.slice(0, moreCutoffIndex)
+    : allCats;
+
+  let html = visibleCats.map(cat =>
     `<button type="button" class="cat-pill" onclick="openStockCategory('${cat}')">${cat}</button>`
   ).join('');
+
+  if (hasMore) {
+    const hiddenCount = allCats.length - moreCutoffIndex;
+    const toggleLabel = showAllCategories ? 'Less ▲' : `+ More (${hiddenCount}) ▼`;
+    html += `<button type="button" class="cat-pill" style="border-color:#ffca28; color:#ffca28;" onclick="toggleMoreCategories()">${toggleLabel}</button>`;
+  }
+
+  bar.innerHTML = html;
 }
 
 function renderTemplatePills() {
@@ -323,41 +357,63 @@ function applyStockTemplate(templateName) {
 }
 
 
-
-
-
-
-
+function toggleMoreCategories() {
+  showAllCategories = !showAllCategories;
+  renderCategoryButtons();
+}
 
 
 function getPartIcon(code) {
-  const wrap = (inner) => `<svg width="46" height="46" viewBox="0 0 46 46" xmlns="http://w3.org" style="background:#161616; border-radius:8px; border:1px solid #3a3a3a; flex-shrink:0;">${inner}</svg>`;
+  const wrap = (inner) => `
+    <svg width="46" height="46" viewBox="0 0 46 46" style="flex-shrink:0; background:#14181e; border:1px solid #333; border-radius:6px;">
+      ${inner}
+    </svg>`;
 
-  // Pigtail Closed-End Crimp Caps (ETPTC1810 = Yellow/Clear, ETPTC2214 = Blue/Clear)
-  if (code === 'ETPTC1810' || code === 'ETPTC2214') {
-    const capColor = code === 'ETPTC1810' ? '#ffca28' : '#42a5f5';
+  // 3/4" Seal Tight Straight Connector
+  if (code === '34STC') {
     return wrap(`
-      <path d="M16 7 C16 4, 30 4, 30 7 L32 28 L14 28 Z" fill="${capColor}" fill-opacity="0.35" stroke="${capColor}" stroke-width="1.8"/>
-      <rect x="18" y="10" width="10" height="14" rx="1.5" fill="#d4af37" stroke="#f57f17" stroke-width="1"/>
-      <line x1="20" y1="24" x2="18" y2="41" stroke="#ef5350" stroke-width="2.6" stroke-linecap="round"/>
-      <line x1="26" y1="24" x2="28" y2="41" stroke="#42a5f5" stroke-width="2.6" stroke-linecap="round"/>
+      <rect x="6" y="16" width="10" height="14" rx="2" fill="#90a4ae" stroke="#cfd8dc" stroke-width="1"/>
+      <rect x="16" y="13" width="8" height="20" rx="1.5" fill="#b0bec5" stroke="#eceff1" stroke-width="1"/>
+      <rect x="24" y="15" width="7" height="16" rx="1" fill="#78909c" stroke="#cfd8dc" stroke-width="1"/>
+      <rect x="31" y="17" width="9" height="12" rx="1" fill="#b0bec5" stroke="#eceff1" stroke-width="1"/>
+      <line x1="34" y1="17" x2="34" y2="29" stroke="#37474f" stroke-width="1.2"/>
+      <line x1="37" y1="17" x2="37" y2="29" stroke="#37474f" stroke-width="1.2"/>
     `);
   }
 
-  // Straight Butt Splice Connectors (Red 22-18, Blue 16-14, Yellow #10)
-  if (code === 'ETBC2218' || code === 'ETBC1614' || code === 'EBC10') {
-    const sleeve = code === 'ETBC2218' ? '#ef5350' : (code === 'ETBC1614' ? '#29b6f6' : '#ffca28');
+  // 3/4" Seal Tight 90 Connector
+  if (code === '34STC90') {
     return wrap(`
-      <line x1="4" y1="23" x2="14" y2="23" stroke="#90a4ae" stroke-width="3" stroke-linecap="round"/>
-      <line x1="32" y1="23" x2="42" y2="23" stroke="#90a4ae" stroke-width="3" stroke-linecap="round"/>
-      <rect x="12" y="16" width="22" height="14" rx="3" fill="${sleeve}" fill-opacity="0.85" stroke="#fff" stroke-width="1"/>
-      <rect x="19" y="16" width="8" height="14" fill="#d4af37" fill-opacity="0.7"/>
+      <path d="M12 36 L12 22 Q12 13 21 13 L33 13" fill="none" stroke="#90a4ae" stroke-width="9" stroke-linecap="round"/>
+      <rect x="6" y="31" width="12" height="7" rx="1.5" fill="#cfd8dc" stroke="#37474f" stroke-width="1"/>
+      <rect x="30" y="8" width="6" height="10" rx="1" fill="#cfd8dc" stroke="#37474f" stroke-width="1"/>
+      <rect x="36" y="9" width="5" height="8" rx="1" fill="#b0bec5"/>
     `);
   }
-  
-    // Female Spade Slide-On Terminals (ETFC1210 = Blue, EFC10 = Yellow)
-  if (code === 'ETFC1210' || code === 'EFC10') {
-    const sleeve = code === 'ETFC1210' ? '#29b6f6' : '#ffca28';
+
+  // 3/4" Seal Tight Flexible Conduit
+  if (code === '34ST') {
+    return wrap(`
+      <path d="M8 35 C12 20, 26 26, 38 11" fill="none" stroke="#78909c" stroke-width="11" stroke-linecap="round"/>
+      <path d="M8 35 C12 20, 26 26, 38 11" fill="none" stroke="#cfd8dc" stroke-width="11" stroke-dasharray="2.5 3" stroke-linecap="round"/>
+    `);
+  }
+
+  // Male/Female Multistack Piggyback (ETMFMST)
+  if (code === 'ETMFMST') {
+    return wrap(`
+      <line x1="4" y1="26" x2="12" y2="26" stroke="#90a4ae" stroke-width="3" stroke-linecap="round"/>
+      <rect x="11" y="20" width="12" height="12" rx="2" fill="#29b6f6" stroke="#fff" stroke-width="1"/>
+      <path d="M23 19 L39 19 L39 33 L23 33 Z" fill="#cfd8dc" stroke="#90a4ae" stroke-width="1.2"/>
+      <line x1="25" y1="24" x2="38" y2="24" stroke="#37474f" stroke-width="1.5"/>
+      <path d="M24 19 L29 9 L38 9 L33 19 Z" fill="#eceff1" stroke="#78909c" stroke-width="1.2"/>
+      <circle cx="32" cy="13" r="1.4" fill="#37474f"/>
+    `);
+  }
+
+  // Female Spade Slide-On Terminals (ETFC1210 & ETFCV1614 = Blue, EFC10 = Yellow)
+  if (code === 'ETFC1210' || code === 'ETFCV1614' || code === 'EFC10') {
+    const sleeve = code === 'EFC10' ? '#ffca28' : '#29b6f6';
     return wrap(`
       <line x1="5" y1="23" x2="14" y2="23" stroke="#90a4ae" stroke-width="3" stroke-linecap="round"/>
       <rect x="13" y="17" width="13" height="12" rx="2" fill="${sleeve}" stroke="#fff" stroke-width="1"/>
@@ -367,35 +423,59 @@ function getPartIcon(code) {
     `);
   }
 
-  
+  // Fork / Spade Terminals (ETFORK1210, ETFORK1614 = Blue)
+  if (code === 'ETFORK1210' || code === 'ETFORK1614') {
+    return wrap(`
+      <line x1="5" y1="23" x2="13" y2="23" stroke="#90a4ae" stroke-width="3" stroke-linecap="round"/>
+      <rect x="12" y="17" width="12" height="12" rx="2" fill="#29b6f6" stroke="#fff" stroke-width="1"/>
+      <path d="M24 15 L39 15 L39 19 L30 19 L30 27 L39 27 L39 31 L24 31 Z" fill="#cfd8dc" stroke="#90a4ae" stroke-width="1.2"/>
+    `);
+  }
 
-  // Ring Terminals (Blue 16-14, Yellow 12-10)
-  if (code === 'ETRING1614' || code === 'ETRING1210') {
-    const sleeve = code === 'ETRING1614' ? '#29b6f6' : '#ffca28';
+  // Butt Splice Connectors (Red 22-18, Blue 16-14, Yellow 10)
+  if (code === 'ETBC2218' || code === 'ETBC1614' || code === 'EBC10') {
+    const sleeve = code === 'ETBC2218' ? '#ef5350' : (code === 'ETBC1614' ? '#29b6f6' : '#ffca28');
     return wrap(`
       <line x1="4" y1="23" x2="12" y2="23" stroke="#90a4ae" stroke-width="3" stroke-linecap="round"/>
-      <rect x="11" y="17" width="12" height="12" rx="2" fill="${sleeve}" stroke="#fff" stroke-width="1"/>
-      <circle cx="32" cy="23" r="9" fill="#cfd8dc" stroke="#90a4ae" stroke-width="1.5"/>
-      <circle cx="32" cy="23" r="4" fill="#161616"/>
+      <line x1="34" y1="23" x2="42" y2="23" stroke="#90a4ae" stroke-width="3" stroke-linecap="round"/>
+      <rect x="11" y="16" width="24" height="14" rx="3" fill="${sleeve}" stroke="#fff" stroke-width="1"/>
+      <line x1="23" y1="16" x2="23" y2="30" stroke="#263238" stroke-width="2"/>
     `);
   }
 
-  // Seal Tight Straight vs 90-Degree Liquidtight Connectors
-  if (code === '34STC') {
+  // Closed-End Pigtail Crimp Caps (ETPTC2214 = Blue, ETPTC1810 = Yellow)
+  if (code === 'ETPTC2214' || code === 'ETPTC1810') {
+    const bandColor = code === 'ETPTC2214' ? '#29b6f6' : '#ffca28';
     return wrap(`
-      <rect x="8" y="15" width="30" height="16" rx="2" fill="#90a4ae" stroke="#eceff1" stroke-width="1.2"/>
-      <rect x="16" y="13" width="6" height="20" fill="#607d8b"/>
-      <rect x="26" y="13" width="6" height="20" fill="#607d8b"/>
+      <path d="M16 26 L16 14 Q16 8 23 8 Q30 8 30 14 L30 26 Z" fill="rgba(207,216,220,0.28)" stroke="#cfd8dc" stroke-width="1.5"/>
+      <rect x="18" y="13" width="10" height="8" rx="1" fill="#b0bec5"/>
+      <rect x="15" y="23" width="16" height="4" rx="1" fill="${bandColor}"/>
+      <line x1="20" y1="27" x2="18" y2="39" stroke="#ef5350" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="26" y1="27" x2="28" y2="39" stroke="#42a5f5" stroke-width="2.5" stroke-linecap="round"/>
     `);
   }
-  if (code === '34STC90') {
+
+  // Ring Terminals (ETRING1614, ETRING1210 = Blue)
+  if (code === 'ETRING1614' || code === 'ETRING1210') {
     return wrap(`
-      <path d="M12 34 L12 20 Q12 12 20 12 L34 12 L34 24 L24 24 L24 34 Z" fill="#90a4ae" stroke="#eceff1" stroke-width="1.2"/>
+      <line x1="5" y1="23" x2="13" y2="23" stroke="#90a4ae" stroke-width="3" stroke-linecap="round"/>
+      <rect x="12" y="17" width="12" height="12" rx="2" fill="#29b6f6" stroke="#fff" stroke-width="1"/>
+      <circle cx="32" cy="23" r="8" fill="#cfd8dc" stroke="#90a4ae" stroke-width="1.2"/>
+      <circle cx="32" cy="23" r="3.5" fill="#14181e"/>
     `);
   }
 
   return '';
 }
+
+
+
+
+
+
+
+
+
 
 function openStockCategory(category) {
   modalSelectedCodes.clear();
@@ -578,7 +658,7 @@ function captureCurrentUnit() {
   const areaMatch = addrRaw.match(/\(([^)]+)\)\s*$/);
   const serviceArea = areaMatch ? areaMatch.at(1).trim() : '';
 
-    const stockRows = document.querySelectorAll('#stock-container .item-row');
+      const stockRows = document.querySelectorAll('#stock-container .item-row');
   let stockData = [], officePartLines = [], smPlusLines = [];
   stockRows.forEach(row => {
     const rawQty = row.querySelector('.qty').value.trim();
@@ -590,11 +670,10 @@ function captureCurrentUnit() {
       const dQty = (!isNaN(numQty) && numQty >= 1) ? String(numQty) : '1';
 
       stockData.push({ qty: dQty, code: fullDisplay });
-      officePartLines.push(`${dQty}--${fullDisplay}`);
+      officePartLines.push(`🟢 ${dQty}--${fullDisplay}`);
       smPlusLines.push(`${code}\t${dQty}`);
     }
   });
-
 
   const vendorRows = document.querySelectorAll('#vendor-parts-container .vendor-row');
   let vendorData = [], vendorPartLines = [];
@@ -614,9 +693,10 @@ function captureCurrentUnit() {
 
       const vendorTag = vendor ? ` from ${vendor}` : (brand !== 'GENERAL' ? ` from ${brand}` : '');
       const priceTag = price ? ` $${price.replace(/^\$/, '')}` : '';
-      officePartLines.push(`${vQty}--${partLabel}${vendorTag}${priceTag}`);
+      officePartLines.push(`🔴 ${vQty}--${partLabel}${vendorTag}${priceTag}`);
     }
   });
+
 
   const vendorSpecLines = [
     unit,
@@ -635,12 +715,13 @@ function captureCurrentUnit() {
     vendorSpecLines
   ].join('\n');
 
-  const officeHeader = desc ? `${unit}: ${desc}` : `${unit}:`;
+    const officeHeader = desc ? `${unit}: ${desc}` : `${unit}:`;
   const officeText = [
     officeHeader,
     officePartLines.join('\n'),
-    laborNotes ? `\n${laborNotes}` : ''
+    laborNotes ? `\n🟡 ${laborNotes}` : ''
   ].filter(Boolean).join('\n');
+
 
   return {
     label: unit,

@@ -2,23 +2,30 @@
 // [keyword or phrase to watch for in Description of Findings]
 // Qty - Part Description - Optional Part #
 const RAW_VENDOR_KEYWORDS = `
-[needs new controller]
-1 - Replacement Temperature Controller
+[economizer actuator]
+1 - economizer actuator, enclosed picture of model# on actuator.
 
 [control board]
-1 - Main Control Board
+1 - Main Control Board.
+
+[reversing valve]
+1 - Reversing valve
 
 [heat exchanger]
-1 - Heat Exchanger Assembly (Complete with Gaskets & Baffles)
+1 - Heat Exchanger Assembly (Complete with Gaskets & Baffles)..
+1 - if no complete assembly would need all gaskets and escutcheons and plates/baffles.
+1 - Feel free to send parts breakdown.
 
 [inducer motor]
-1 - Draft Inducer Motor Assembly
+1 - Draft Inducer Motor Assembly with Gaskets.
 
 [blower motor]
-1 - Evaporator / Indoor Blower Motor
+1 - Blower Motor(AKA Evaporator Motor).
+1 - Sheave For Blower Motor(AKA Pulley).
 
 [condenser fan motor]
-1 - Condenser Fan Motor
+1 - Condenser Fan Motor.
+1 - Fan Blade for Condenser Fan Motor.
 
 [compressor]
 1 - Replacement Compressor

@@ -15,6 +15,10 @@ Parts - carrier@carrier.com
 Fort Worth - fortworth@uri.com
 Dallas - dallas@uri.com
 Denton - denton@uri.com
+
+[OTHER]
+Other - Enter Email in Mail 
+
 `;
 
 const EMAIL_DIRECTORY = (() => {
