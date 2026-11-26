@@ -640,26 +640,18 @@ function checkKeywords() {
 }
 
 
-
-
-   
 function captureCurrentUnit() {
-  const unit = getUnitTag() || 'Unit';
-  const unitTagRaw = document.getElementById('unitTag')?.value.trim() || '';
-  const brand = document.getElementById('brand')?.value.trim().toUpperCase() || 'GENERAL';
-  const year = document.getElementById('year')?.value.trim() || '';
-  const equipDesc = document.getElementById('equipDesc')?.value.trim().toUpperCase() || '';
-  const model = document.getElementById('model')?.value.trim().toUpperCase() || '';
-  const serial = document.getElementById('serial')?.value.trim().toUpperCase() || '';
-  const desc = document.getElementById('desc')?.value.trim() || '';
-  const laborNotes = document.getElementById('laborNotes')?.value.trim() || '';
+  const unit = document.getElementById('unitTag').value.trim() || 'Unit';
+  const brand = document.getElementById('brand').value.trim().toUpperCase() || 'GENERAL';
+  const year = document.getElementById('year').value.trim();
+  const equipDesc = document.getElementById('equipDesc').value.trim();
+  const model = document.getElementById('model').value.trim();
+  const serial = document.getElementById('serial').value.trim();
+  const desc = document.getElementById('desc').value.trim();
+  const laborNotes = document.getElementById('laborNotes').value.trim();
 
-  const addrRaw = document.getElementById('addr')?.value.trim() || '';
-  const areaMatch = addrRaw.match(/\(([^)]+)\)\s*$/);
-  const serviceArea = areaMatch ? areaMatch.at(1).trim() : '';
-
-      const stockRows = document.querySelectorAll('#stock-container .item-row');
-  let stockData = [], officePartLines = [], smPlusLines = [];
+  const stockRows = document.querySelectorAll('#stock-container .item-row');
+  let stockData = [], stockOfficeLines = [], smPlusLines = [];
   stockRows.forEach(row => {
     const rawQty = row.querySelector('.qty').value.trim();
     const rawText = row.querySelector('.code').value.trim();
@@ -670,13 +662,13 @@ function captureCurrentUnit() {
       const dQty = (!isNaN(numQty) && numQty >= 1) ? String(numQty) : '1';
 
       stockData.push({ qty: dQty, code: fullDisplay });
-      officePartLines.push(`🟢 ${dQty}--${fullDisplay}`);
+      stockOfficeLines.push(`▪ ${dQty}--${fullDisplay}`);
       smPlusLines.push(`${code}\t${dQty}`);
     }
   });
 
   const vendorRows = document.querySelectorAll('#vendor-parts-container .vendor-row');
-  let vendorData = [], vendorPartLines = [];
+  let vendorData = [], vendorPartLines = [], vendorOfficeLines = [];
   vendorRows.forEach(row => {
     const rawQty = row.querySelector('.v-qty').value.trim();
     const vDesc = row.querySelector('.v-desc').value.trim();
@@ -693,56 +685,53 @@ function captureCurrentUnit() {
 
       const vendorTag = vendor ? ` from ${vendor}` : (brand !== 'GENERAL' ? ` from ${brand}` : '');
       const priceTag = price ? ` $${price.replace(/^\$/, '')}` : '';
-      officePartLines.push(`🔴 ${vQty}--${partLabel}${vendorTag}${priceTag}`);
+      vendorOfficeLines.push(`▪ ${vQty}--${partLabel}${vendorTag}${priceTag}`);
     }
   });
 
+  const addrRaw = document.getElementById('addr')?.value.trim() || '';
+  const areaMatch = addrRaw.match(/\(([^)]+)\)\s*$/);
+  const serviceArea = areaMatch ? areaMatch.at(1).trim() : '';
 
-  const vendorSpecLines = [
+  const specLines = [
     unit,
     `Make: ${brand}`,
-    model ? `Model: ${model}` : '',
-    serial ? `Serial #: ${serial}` : '',
-    equipDesc ? `Description: ${equipDesc}` : '',
+    model ? `Model: ${model.toUpperCase()}` : '',
+    serial ? `Serial #: ${serial.toUpperCase()}` : '',
+    equipDesc ? `Description: ${equipDesc.toUpperCase()}` : '',
     serviceArea ? `Service Area: ${serviceArea}` : '',
     year ? `Year: ${year}` : ''
   ].filter(Boolean).join('\n');
 
-  const vendorText = [
-    `${unit}:`,
-    vendorPartLines.length ? vendorPartLines.join('\n') : '1--(Specify part needed)',
-    ``,
-    vendorSpecLines
-  ].join('\n');
+  const vendorBodyLines = vendorPartLines.length ? vendorPartLines.join('\n') : '1--(Specify part needed)';
+  const vendorText = `${unit}:\n${vendorBodyLines}\n\n${specLines}`;
 
-    const officeHeader = desc ? `${unit}: ${desc}` : `${unit}:`;
+  const officeHeader = desc ? `${unit}: ${desc}` : `${unit}:`;
   const officeText = [
     officeHeader,
-    officePartLines.join('\n'),
-    laborNotes ? `\n🟡 ${laborNotes}` : ''
+    stockOfficeLines.join('\n'),
+    vendorOfficeLines.length ? `\n**** VENDOR PARTS ****\n${vendorOfficeLines.join('\n')}` : '',
+    laborNotes ? `\n**** LABOR ****\n${laborNotes}` : ''
   ].filter(Boolean).join('\n');
-
 
   return {
     label: unit,
     brand,
-    rawFields: {
-      unitTag: unitTagRaw,
-      brand: document.getElementById('brand')?.value.trim() || '',
-      year,
-      equipDesc,
-      model,
-      serial,
-      desc,
-      laborNotes,
-      stockData,
-      vendorData
-    },
-    vendorText,
     officeText,
-    smPlusLines
+    vendorText,
+    smPlusLines,
+    rawFields: {
+      unitTag: document.getElementById('unitTag').value.trim(),
+      brand: document.getElementById('brand').value.trim(),
+      year, equipDesc, model, serial, desc, laborNotes,
+      stockData, vendorData
+    }
   };
 }
+
+
+   
+
 
 
 
