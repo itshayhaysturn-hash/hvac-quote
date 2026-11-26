@@ -150,9 +150,14 @@ function formatStockDisplay(codeOrFull) {
   return match ? `${match.code} - ${match.desc}` : upper;
 }
 
-
 function addStockRow(qty, code) {
   const container = document.getElementById('stock-container');
+  // Prevent stacking multiple blank rows at the bottom
+  if (!qty && !code && container.lastElementChild) {
+    const lastCode = container.lastElementChild.querySelector('.code')?.value.trim();
+    if (!lastCode) return;
+  }
+
   const row = document.createElement('div');
   row.className = 'item-row';
   const displayVal = formatStockDisplay(code);
@@ -164,6 +169,8 @@ function addStockRow(qty, code) {
   `;
   container.appendChild(row);
 }
+
+
 
 
 
