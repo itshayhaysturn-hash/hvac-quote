@@ -53,7 +53,8 @@ function parseText(raw) {
   if (/\bREFR(IGERATION)?\b/i.test(raw)) lastSystemType = 'REFR';
   else if (/\bHVAC\b/i.test(raw)) lastSystemType = 'HVAC';
 
-    const woVal = grabMatch(raw, /(?:WO|Work\s*Order)\s*#?\s*[:\-]?\s*([A-Z0-9\-]+)/i);
+    
+  const woVal = grabMatch(raw, /(?:(?:\b|SERVICE|REFR|HVAC|PM|QUOT[A-Z]*)WO|Work\s*Order)\s*#?\s*[:\-]?\s*([0-9][A-Z0-9\-]*)/i);
   const poVal = grabMatch(raw, /(?:Cust(?:omer)?\s*)?PO\s*#?\s*[:\-]?\s*([A-Z0-9\-]+)/i);
   if (woVal) {
     document.getElementById('wo').value = woVal;
