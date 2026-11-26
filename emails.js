@@ -19,27 +19,65 @@ Denton - denton@uri.com
 [OTHER]
 Other - Enter Email in Mail 
 
+[CENTURY]
+Century - chris@century.com
+
+[TEXAS AIRE]
+Texas Aire - quotes@texasaire.com
+
+[ALT VENDORS]
+[JOHNSON CONTROL]
+CENTURY
+TEXAS AIRE
+
+[YORK]
+CENTURY
+TEXAS AIRE
+
+[GOODMAN]
+TEXAS AIRE
+CENTURY
+
+
 `;
 
-const EMAIL_DIRECTORY = (() => {
-  let currentGroup = '';
+const { EMAIL_DIRECTORY, ALT_VENDOR_MAP } = (() => {
+  let currentSection = '';
+  let inAltMode = false;
   const dir = {};
+  const alt = {};
+
   RAW_EMAILS.trim().split(/\r?\n/).forEach(rawLine => {
     const line = rawLine.trim();
-    if (!line) return;
-    const grpMatch = line.match(/^\[(.+)\]$/);
-    if (grpMatch) {
-      currentGroup = grpMatch.at(1).trim().toUpperCase();
-      if (!dir[currentGroup]) dir[currentGroup] = [];
+    if (!line || line.startsWith('//')) return;
+
+    const headerMatch = line.match(/^\[(.+)\]$/);
+    if (headerMatch) {
+      const tag = headerMatch.at(1).trim().toUpperCase();
+      if (tag === 'ALT VENDORS' || tag === 'ALT VENDOR') {
+        inAltMode = true;
+        currentSection = '';
+        return;
+      }
+      currentSection = tag;
+      if (inAltMode) {
+        if (!alt[currentSection]) alt[currentSection] = [];
+      } else {
+        if (!dir[currentSection]) dir[currentSection] = [];
+      }
       return;
     }
-    if (currentGroup && line.includes(' - ')) {
-      const [label, ...rest] = line.split(' - ');
-      dir[currentGroup].push({
-        label: label.trim(),
-        email: rest.join(' - ').trim()
-      });
+
+    if (inAltMode && currentSection) {
+      const vendorName = line.split(' - ').at(0).trim().toUpperCase();
+      if (vendorName && !alt[currentSection].includes(vendorName)) {
+        alt[currentSection].push(vendorName);
+      }
+    } else if (!inAltMode && currentSection && line.includes(' - ')) {
+      const [label, email] = line.split(' - ').map(s => s.trim());
+      dir[currentSection].push({ label, email });
     }
   });
-  return dir;
+
+  return { EMAIL_DIRECTORY: dir, ALT_VENDOR_MAP: alt };
 })();

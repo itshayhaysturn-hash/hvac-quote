@@ -525,7 +525,10 @@ function confirmStockModal() {
 }
 
 function addVendorRow(qty, desc, part, price, vendor) {
-  const defaultVendor = vendor || document.getElementById('brand').value.trim().toUpperCase();
+  const rawBrand = document.getElementById('brand').value.trim().toUpperCase();
+  const altChoices = (typeof ALT_VENDOR_MAP !== 'undefined' && ALT_VENDOR_MAP[rawBrand]) || [];
+  const mappedVendor = altChoices.length > 0 ? altChoices.at(0) : rawBrand;
+  const defaultVendor = vendor || mappedVendor;
   const container = document.getElementById('vendor-parts-container');
   const row = document.createElement('div');
   row.className = 'item-row vendor-row';
@@ -535,18 +538,20 @@ function addVendorRow(qty, desc, part, price, vendor) {
     <input type="text" class="v-part" placeholder="Part #" value="${part}">
     <input type="text" class="v-price" placeholder="Price $" value="${price}" inputmode="decimal">
     <input type="text" class="v-vendor" placeholder="Tap Vendor" value="${defaultVendor}" readonly style="cursor:pointer; color:#4da3ff; font-weight:bold;" onclick="if (this.hasAttribute('readonly')) openRowVendorPicker(this)">
-
     <button type="button" class="btn-remove" onclick="this.parentElement.remove()">X</button>
   `;
   container.appendChild(row);
 }
 
 function openRowVendorPicker(inputEl) {
+  const rawBrand = document.getElementById('brand')?.value.trim().toUpperCase() || '';
+  const preferredAlts = (typeof ALT_VENDOR_MAP !== 'undefined' && ALT_VENDOR_MAP[rawBrand]) || [];
+
   const emailVendors = (typeof EMAIL_DIRECTORY !== 'undefined')
     ? Object.keys(EMAIL_DIRECTORY).filter(k => k !== 'OFFICE')
     : [];
   const localStores = ['HOME DEPOT', 'GRAINGER', 'JOHNSTONE', 'LOWES'];
-  const allChoices = [...new Set([...emailVendors, ...localStores])];
+  const allChoices = [...new Set([...preferredAlts, ...emailVendors, ...localStores])];
 
   document.getElementById('stock-modal-title').textContent = 'Select Vendor / Store';
   const listEl = document.getElementById('stock-modal-list');
@@ -554,12 +559,16 @@ function openRowVendorPicker(inputEl) {
   addBtn.style.display = 'none';
 
   listEl.innerHTML = allChoices.map(v => {
+    const isAlt = preferredAlts.includes(v);
     const isEmailVendor = emailVendors.includes(v);
-    const badge = isEmailVendor ? 'Email Vendor' : 'Local Store (Office Email Only)';
+    const badge = isAlt
+      ? `Recommended for ${rawBrand} (Email Vendor)`
+      : (isEmailVendor ? 'Email Vendor' : 'Local Store (Office Email Only)');
+    const nameColor = isAlt ? '#81c784' : '#4da3ff';
     return `
       <button type="button" class="modal-item" style="color:#fff; font-size:16px; text-align:left; width:100%;" data-vendor="${v}">
         <div>
-          <strong style="color:#4da3ff;">${v}</strong><br>
+          <strong style="color:${nameColor};">${v}</strong><br>
           <span style="font-size:12px; color:#aaa;">${badge}</span>
         </div>
       </button>
@@ -572,6 +581,7 @@ function openRowVendorPicker(inputEl) {
       </div>
     </button>
   `;
+
 
   listEl.querySelectorAll('button').forEach(btn => {
     btn.onclick = () => {
