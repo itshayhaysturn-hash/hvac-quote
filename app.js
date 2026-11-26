@@ -10,19 +10,17 @@ function grabMatch(text, regex) {
 
 function getUnitTag() {
   const explicitTag = document.getElementById('unitTag')?.value.trim();
-  if (explicitTag) return explicitTag.toUpperCase();
-  const addr = document.getElementById('addr').value.trim();
-  const unitMatch = addr.match(/\b((?:AC|RTU|CU|AHU|EF|MAU|WIC|WIF|REACH|ICE)[\s\-]*\d+)\b/i);
-  return unitMatch ? unitMatch.at(1).toUpperCase() : '';
+  return explicitTag ? explicitTag.toUpperCase() : '';
 }
+
 
 function detectRefrigerant() {
   const unitTag = document.getElementById('unitTag')?.value.toUpperCase() || '';
-  const desc = document.getElementById('equipDesc').value.toUpperCase();
-  const addr = document.getElementById('addr').value.toUpperCase();
-  const combined = `${lastSystemType} ${unitTag} ${desc} ${addr}`;
+  const desc = document.getElementById('equipDesc')?.value.toUpperCase() || '';
+  const combined = `${lastSystemType} ${unitTag} ${desc}`;
   return /\b(REFR|REFRIGERATION|COOLER|FREEZER|WIC|WIF|REACH)\b/.test(combined) ? 'R404' : 'R410A';
 }
+
 
 function getEmailSubjectPrefix(overrideUnit) {
   const wo = document.getElementById('wo').value.trim();
@@ -177,27 +175,15 @@ function parseText(raw) {
     updated.push('Unit #');
   }
 
-  if (serviceArea) {
-    const currentAddr = document.getElementById('addr').value.trim();
-    const baseAddr = currentAddr.replace(/\s*\([^)]*\)\s*$/, '').trim();
-    document.getElementById('addr').value = baseAddr ? `${baseAddr} (${serviceArea})` : serviceArea;
-    updated.push('Service Area');
-  }
-
   if (woVal || poVal || /Service Type:/i.test(raw)) {
-    const streetIdx = lines.findIndex(l => /^\d+\s+[A-Z0-9\s\.]+(?:BLVD|BOULEVARD|ST|STREET|AVE|AVENUE|RD|ROAD|DR|DRIVE|HWY|PKWY|LN|LANE|WAY|CT)/i.test(l));
-    if (streetIdx > 0) {
-      document.getElementById('cust').value = lines.at(streetIdx - 1);
-      updated.push('Customer');
-      const street = lines.at(streetIdx);
-      const nextLine = lines.at(streetIdx + 1) || '';
-      const cityStateZip = !nextLine.includes(':') ? nextLine : '';
-      const fullAddr = [street, cityStateZip].filter(Boolean).join(', ');
-      const existingTag = document.getElementById('addr').value.trim();
-      document.getElementById('addr').value = (existingTag && !existingTag.includes(street)) ? `${fullAddr} (${existingTag})` : fullAddr;
-      updated.push('Address');
-    }
+  const streetIdx = lines.findIndex(l => /^\d+\s+[A-Z0-9\s\.]+(?:BLVD|BOULEVARD|ST|STREET|AVE|AVENUE|RD|ROAD|DR|DRIVE|HWY|PKWY|LN|LANE|WAY|CT)/i.test(l));
+  if (streetIdx > 0) {
+    document.getElementById('cust').value = lines.at(streetIdx - 1);
+    updated.push('Customer');
   }
+}
+
+  
 
   document.getElementById('paste-status').textContent = updated.length ? 'Filled: ' + updated.join(', ') : 'Checked text (no matching fields found).';
   updateBatchUI();
@@ -699,9 +685,6 @@ function captureCurrentUnit() {
     }
   });
 
-  const addrRaw = document.getElementById('addr')?.value.trim() || '';
-  const areaMatch = addrRaw.match(/\(([^)]+)\)\s*$/);
-  const serviceArea = areaMatch ? areaMatch.at(1).trim() : '';
 
   const specLines = [
     unit,
@@ -709,7 +692,6 @@ function captureCurrentUnit() {
     model ? `Model: ${model.toUpperCase()}` : '',
     serial ? `Serial #: ${serial.toUpperCase()}` : '',
     equipDesc ? `Description: ${equipDesc.toUpperCase()}` : '',
-    serviceArea ? `Service Area: ${serviceArea}` : '',
     year ? `Year: ${year}` : ''
   ].filter(Boolean).join('\n');
 
@@ -747,9 +729,7 @@ function captureCurrentUnit() {
 
 
 function resetUnitFields() {
-  const addr = document.getElementById('addr').value.trim();
-  const baseAddr = addr.replace(/\s*\([^)]*\)\s*$/, '').trim();
-  document.getElementById('addr').value = /^(AC|RTU|CU|AHU|EF|MAU|WIC|WIF|REACH|ICE)[\s\-]*\d+/i.test(baseAddr) ? '' : baseAddr;
+  
   ['unitTag', 'brand', 'year', 'equipDesc', 'model', 'serial', 'desc', 'laborNotes'].forEach(id => {
   const el = document.getElementById(id);
   if (el) el.value = '';
@@ -968,10 +948,7 @@ function buildVendorUnitBlock(unitObj, targetVendor) {
     return `${p.qty}--${label}`;
   });
 
-  const addrRaw = document.getElementById('addr')?.value.trim() || '';
-  const areaMatch = addrRaw.match(/\(([^)]+)\)\s*$/);
-  const serviceArea = areaMatch ? areaMatch.at(1).trim() : '';
-
+  
   const specLines = [
     unitObj.label,
     `Make: ${unitBrand || 'N/A'}`,
@@ -1136,7 +1113,6 @@ function saveSessionState() {
     wo: document.getElementById('wo')?.value || '',
     po: document.getElementById('po')?.value || '',
     cust: document.getElementById('cust')?.value || '',
-    addr: document.getElementById('addr')?.value || '',
     current,
     unitBatch,
     editingIndex
@@ -1161,7 +1137,7 @@ function restoreSessionState() {
     setVal('wo', state.wo);
     setVal('po', state.po);
     setVal('cust', state.cust);
-    setVal('addr', state.addr);
+    
 
     const f = state.current || {};
     setVal('unitTag', f.unitTag);
@@ -1193,7 +1169,7 @@ function restoreSessionState() {
 function confirmNewJob() {
   if (!confirm('Are you sure? You will lose all info for this job.')) return;
   localStorage.removeItem('hvacQuoteState');
-  ['wo', 'po', 'cust', 'addr'].forEach(id => document.getElementById(id).value = '');
+  ['wo', 'po', 'cust'].forEach(id => document.getElementById(id).value = '');
   unitBatch = [];
   editingIndex = -1;
   resetUnitFields();
