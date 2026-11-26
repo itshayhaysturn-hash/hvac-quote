@@ -288,16 +288,25 @@ function openStockCategory(category) {
   const listEl = document.getElementById('stock-modal-list');
   const items = TRUCK_STOCK_CATALOG.filter(i => i.category === category);
 
-  listEl.innerHTML = items.map(item => `
-    <label class="modal-item">
-      <input type="checkbox" value="${item.code}" onchange="toggleModalCode('${item.code}', this.checked)">
-      ${getPartIcon(item.code)}
-      <div>
-        <strong style="color:#4da3ff;">${item.code}</strong><br>
-        <span style="font-size:14px; color:#ccc;">${item.desc}</span>
-      </div>
-    </label>
-  `).join('');
+  listEl.innerHTML = items.map(item => {
+    if (item.code === 'INFO') {
+      return `
+        <div style="background:#1c2530; border-left:4px solid #ffca28; padding:10px 12px; border-radius:6px; margin-bottom:8px; font-size:13px; color:#e0e0e0; line-height:1.4;">
+          <strong style="color:#ffca28;">TECH NOTE:</strong> ${item.desc}
+        </div>
+      `;
+    }
+    return `
+      <label class="modal-item">
+        <input type="checkbox" value="${item.code}" onchange="toggleModalCode('${item.code}', this.checked)">
+        ${getPartIcon(item.code)}
+        <div>
+          <strong style="color:#4da3ff;">${item.code}</strong><br>
+          <span style="font-size:14px; color:#ccc;">${item.desc}</span>
+        </div>
+      </label>
+    `;
+  }).join('');
 
   const addBtn = document.getElementById('btn-add-selected-stock');
   addBtn.style.display = 'block';
@@ -305,6 +314,7 @@ function openStockCategory(category) {
   updateModalCount();
   document.getElementById('stock-modal').style.display = 'flex';
 }
+
 
 
 function toggleModalCode(code, isChecked) {
