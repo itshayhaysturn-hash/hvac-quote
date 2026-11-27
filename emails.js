@@ -29,12 +29,21 @@ Fort Worth - chris@century.com
 Parts(state) - parts@texasairesystems.com
 Fort Worth - quotes@texasaire.com
 
-[BAKER DISTRIBUTING | heil, grand aire, comfort maker]
+[BAKER DISTRIBUTING | heil, grand aire, comfort maker, rheem]
 Denton(juan garcia) - jgarcia@bakerdist.com
 Denton(george prentice) - gprentice@bakerdist.com
 
+[BARSCO | Heat Craft, Icp]
+Barsco - na@barsco.com
+
+[INSCO | Ruud]
+Insco - need@insco.com
+
 [PARTS TOWN | all refrigeration appliances]
 Parts Town(national) - cms@partstown.com
+
+[DAVENAL | Units never break]
+Fleur - classicalmusic@notatwork.com
 
 [COUNTER ONLY]
 HOME DEPOT
@@ -42,13 +51,20 @@ GRAINGER
 LOWES
 
 [ALT VENDORS]
-[JOHNSON CONTROL]
+[JOHNCONTRO]
 CENTURY
 TEXAS AIRE
 
 [YORK]
 CENTURY
 TEXAS AIRE
+
+[RUUD]
+INSCO
+
+[RHEEM]
+BAKER DISTRIBUTING
+
 `;
 
 const { EMAIL_DIRECTORY, ALT_VENDOR_MAP, VENDOR_NOTES, ALL_VENDORS } = (() => {
