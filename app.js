@@ -267,6 +267,23 @@ document.addEventListener('click', e => {
 let modalSelectedCodes = new Set();
 let showAllCategories = false;
 
+let officeSentUnits = new Set();
+let vendorSentUnits = new Set();
+
+function getUnitSentKey(u) {
+  return `${u.label}|${(u.brand || '').toUpperCase()}|${(u.rawFields?.serial || '').toUpperCase()}`;
+}
+
+function getUnitStatusTags(key) {
+  if (!key) return '';
+  const tags = [];
+  if (vendorSentUnits.has(key)) tags.push('(Vendor Sent 📦)');
+  if (officeSentUnits.has(key)) tags.push('(Office Sent 🏢)');
+  return tags.length ? ` <span style="color:#81c784; font-size:12px;">${tags.join(' ')}</span>` : '';
+}
+
+
+
 function toggleMoreCategories() {
   showAllCategories = !showAllCategories;
   renderCategoryButtons();
@@ -695,7 +712,6 @@ function captureCurrentUnit() {
     }
   });
 
-
   const specLines = [
     unit,
     `Make: ${brand}`,
@@ -705,10 +721,12 @@ function captureCurrentUnit() {
     year ? `Year: ${year}` : ''
   ].filter(Boolean).join('\n');
 
-  const vendorBodyLines = vendorPartLines.length ? vendorPartLines.join('\n') : '1--(Specify part needed)';
-  const vendorText = `${unit}:\n${vendorBodyLines}\n\n${specLines}`;
+  const unitDisplay = (brand && brand !== 'GENERAL') ? `${unit} (${brand})` : unit;
 
-  const officeHeader = desc ? `${unit}: ${desc}` : `${unit}:`;
+  const vendorBodyLines = vendorPartLines.length ? vendorPartLines.join('\n') : '1--(Specify part needed)';
+  const vendorText = `${unitDisplay}:\n${vendorBodyLines}\n\n${specLines}`;
+
+  const officeHeader = desc ? `${unitDisplay}: ${desc}` : `${unitDisplay}:`;
   const officeText = [
     officeHeader,
     stockOfficeLines.join('\n'),
@@ -731,13 +749,7 @@ function captureCurrentUnit() {
   };
 }
 
-
-   
-
-
-
-
-
+  
 function resetUnitFields() {
   
   ['unitTag', 'brand', 'year', 'equipDesc', 'model', 'serial', 'desc', 'laborNotes'].forEach(id => {
@@ -810,6 +822,8 @@ function clearBatch() {
   if (unitBatch.length === 0) return;
   if (!confirm(`Clear all ${unitBatch.length} units from the batch?`)) return;
   unitBatch = [];
+  officeSentUnits.clear();
+  vendorSentUnits.clear();
   editingIndex = -1;
   updateBatchUI();
   saveSessionState();
@@ -831,12 +845,21 @@ function updateBatchUI() {
   }
 
   if (pillsEl) {
-    pillsEl.innerHTML = unitBatch.map((u, i) => `
-      <div class="batch-pill ${i === editingIndex ? 'editing' : ''}" onclick="recallBatchUnit(${i})">
-        <span>${u.label} (${u.brand})</span>
-        <span class="pill-del" title="Remove unit" onclick="removeBatchUnit(${i}, event)">&times;</span>
-      </div>
-    `).join('');
+    pillsEl.innerHTML = unitBatch.map((u, i) => {
+      const key = getUnitSentKey(u);
+      const badges = [
+        vendorSentUnits.has(key) ? '📦' : '',
+        officeSentUnits.has(key) ? '🏢' : ''
+      ].filter(Boolean).join('');
+      const badgeText = badges ? ` ${badges}` : '';
+
+      return `
+        <div class="batch-pill ${i === editingIndex ? 'editing' : ''}" onclick="recallBatchUnit(${i})">
+          <span>${u.label} (${u.brand})${badgeText}</span>
+          <span class="pill-del" title="Remove unit" onclick="removeBatchUnit(${i}, event)">&times;</span>
+        </div>
+      `;
+    }).join('');
   }
 
   if (statusEl) {
@@ -851,21 +874,23 @@ function updateBatchUI() {
 
 
 
+
 function copyTextSafe(text) {
   if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).catch(() => {});
 }
+
 function launchEmail(subject, body, toAddress = '', ccAddress = '') {
-  const outBox = document.getElementById('output');
-  outBox.value = `To: ${toAddress || '(Select in Mail)'}${ccAddress ? '\nCc: ' + ccAddress : ''}\nSubject: ${subject}\n\n${body}`;
-  outBox.style.display = 'block';
-  copyTextSafe(body);
+  const cleanTo = (toAddress === 'Enter Email in Mail') ? '' : (toAddress || '').trim();
+  const params = [];
+  if (ccAddress && ccAddress.trim()) params.push(`cc=${encodeURIComponent(ccAddress.trim())}`);
+  if (subject) params.push(`subject=${encodeURIComponent(subject)}`);
+  if (body) params.push(`body=${encodeURIComponent(body)}`);
 
-  const crlfBody = body.replace(/\r?\n/g, '\r\n');
-  let params = [`subject=${encodeURIComponent(subject)}`, `body=${encodeURIComponent(crlfBody)}`];
-  if (ccAddress) params.unshift(`cc=${encodeURIComponent(ccAddress)}`);
-
-  window.location.href = `mailto:${encodeURIComponent(toAddress)}?${params.join('&')}`;
+  const mailtoUrl = `mailto:${encodeURIComponent(cleanTo)}${params.length ? '?' + params.join('&') : ''}`;
+  window.location.href = mailtoUrl;
 }
+
+
 
 function openEmailBranchPicker(title, entries, onPick) {
   document.getElementById('stock-modal-title').textContent = title;
@@ -920,22 +945,36 @@ function openVendorPicker() {
 
 function getAllWorkingUnits() {
   const list = [...unitBatch];
-  const cur = captureCurrentUnit();
-  const f = cur.rawFields || {};
-  const hasActiveData = Boolean(
-    f.unitTag || f.model || f.serial || f.desc || f.laborNotes ||
+  const active = captureCurrentUnit();
+  const f = active.rawFields || {};
+
+  const hasCurrentContent = Boolean(
+    f.unitTag || f.brand || f.model || f.serial || f.equipDesc ||
+    f.desc || f.laborNotes ||
     (f.stockData && f.stockData.length > 0) ||
     (f.vendorData && f.vendorData.length > 0)
   );
 
-  // If the current screen has data and isn't already saved at editingIndex, include it automatically
-  if (editingIndex >= 0 && list[editingIndex]) {
-    list[editingIndex] = cur;
-  } else if (hasActiveData) {
-    const alreadyInBatch = list.some(u => u.label === cur.label && u.rawFields?.serial === f.serial);
-    if (!alreadyInBatch) list.push(cur);
+  if (editingIndex >= 0 && editingIndex < list.length) {
+    // Replace the pill being edited with the updated form fields
+    list[editingIndex] = active;
+  } else if (hasCurrentContent) {
+    // Only skip appending if the active screen is an exact duplicate of the last saved pill
+    const last = list.at(-1);
+    const isExactSameAsLast = last &&
+      last.label === active.label &&
+      last.brand === active.brand &&
+      (last.rawFields?.serial || '') === (f.serial || '') &&
+      (last.rawFields?.model || '') === (f.model || '') &&
+      (last.rawFields?.desc || '') === (f.desc || '') &&
+      last.officeText === active.officeText;
+
+    if (!isExactSameAsLast) {
+      list.push(active);
+    }
   }
-  return list.length > 0 ? list : [cur];
+
+  return list.length > 0 ? list : [active];
 }
 
 
@@ -958,42 +997,58 @@ function buildVendorUnitBlock(unitObj, targetVendor) {
     return `${p.qty}--${label}`;
   });
 
-  
   const specLines = [
     unitObj.label,
     `Make: ${unitBrand || 'N/A'}`,
     f.model ? `Model: ${f.model.toUpperCase()}` : '',
     f.serial ? `Serial #: ${f.serial.toUpperCase()}` : '',
     f.equipDesc ? `Description: ${f.equipDesc.toUpperCase()}` : '',
-    serviceArea ? `Service Area: ${serviceArea}` : '',
     f.year ? `Year: ${f.year}` : ''
   ].filter(Boolean).join('\n');
 
+  const unitDisplay = (unitBrand && unitBrand !== 'GENERAL') ? `${unitObj.label} (${unitBrand})` : unitObj.label;
+
   return {
-    label: unitObj.label,
-    text: `${unitObj.label}:\n${partLines.join('\n')}\n\n${specLines}`
+    sentKey: getUnitSentKey(unitObj),
+    label: unitDisplay,
+    text: `${unitDisplay}:\n${partLines.join('\n')}\n\n${specLines}`
   };
 }
 
+
 function sendVendorQuoteEmail(targetVendor) {
   const items = getAllWorkingUnits();
+  const cleanTarget = (targetVendor || '').trim().toUpperCase();
 
-  // 1. Strictly match parts assigned to targetVendor (or blank vendor when unit brand matches)
+  // 1. Strictly match parts assigned to cleanTarget (or blank vendor when unit brand matches)
   let eligible = items
-    .map(u => buildVendorUnitBlock(u, targetVendor))
+    .map(u => buildVendorUnitBlock(u, cleanTarget))
     .filter(Boolean);
 
-  // 2. Only fall back to "all non-stock parts" if targetVendor is a general supply house
-  //    (not an equipment manufacturer in KNOWN_BRANDS) and no rows were tagged for it
-  const isEquipBrand = (typeof KNOWN_BRANDS !== 'undefined') && KNOWN_BRANDS.includes(targetVendor);
-  if (eligible.length === 0 && !isEquipBrand) {
-    const withAnyVendorParts = items.filter(u => u.rawFields?.vendorData?.length > 0);
-    const fallbackUnits = withAnyVendorParts.length > 0 ? withAnyVendorParts : items;
-    eligible = fallbackUnits.map(u => ({ label: u.label, text: u.vendorText }));
+  // 2. If no rows matched specifically:
+  //    - For equipment brands (LENNOX, TRANE, CARRIER): only include units whose Make actually matches
+  //    - For supply houses (UNITED, CENTURY, TEXAS AIRE, OTHER): include any unit with vendor parts
+  const isEquipBrand = (typeof KNOWN_BRANDS !== 'undefined') && KNOWN_BRANDS.includes(cleanTarget);
+  if (eligible.length === 0) {
+    if (isEquipBrand) {
+      const brandUnits = items.filter(u => (u.brand || '').toUpperCase() === cleanTarget);
+      eligible = brandUnits.map(u => {
+        const uDisp = `${u.label} (${cleanTarget})`;
+        return { sentKey: getUnitSentKey(u), label: uDisp, text: u.vendorText };
+      });
+    } else {
+      const withAnyVendorParts = items.filter(u => u.rawFields?.vendorData?.length > 0);
+      const fallbackUnits = withAnyVendorParts.length > 0 ? withAnyVendorParts : items;
+      eligible = fallbackUnits.map(u => {
+        const uBrand = (u.brand || '').toUpperCase();
+        const uDisp = (uBrand && uBrand !== 'GENERAL') ? `${u.label} (${uBrand})` : u.label;
+        return { sentKey: getUnitSentKey(u), label: uDisp, text: u.vendorText };
+      });
+    }
   }
 
   if (eligible.length === 0) {
-    alert(`No non-truck-stock parts are assigned to ${targetVendor}.`);
+    alert(`No non-truck-stock parts are assigned to ${cleanTarget}.`);
     return;
   }
 
@@ -1013,67 +1068,149 @@ function sendVendorQuoteEmail(targetVendor) {
       launchEmail(subject, body, toEmail, ccEmail);
     };
 
-    const entries = (typeof EMAIL_DIRECTORY !== 'undefined' && EMAIL_DIRECTORY[targetVendor]) || [];
+    const entries = (typeof EMAIL_DIRECTORY !== 'undefined' && EMAIL_DIRECTORY[cleanTarget]) || [];
     if (entries.length > 1) {
-      openEmailBranchPicker(`Select ${targetVendor} Branch`, entries, sendWithTo);
+      openEmailBranchPicker(`Select ${cleanTarget} Branch`, entries, sendWithTo);
     } else {
       sendWithTo(entries.length === 1 ? entries.at(0).email : '');
     }
   };
 
-  if (eligible.length > 1) {
-    document.getElementById('stock-modal-title').textContent = `Units to Include for ${targetVendor}`;
-    const listEl = document.getElementById('stock-modal-list');
-    const addBtn = document.getElementById('btn-add-selected-stock');
-    addBtn.style.display = 'block';
-    addBtn.textContent = `Continue (${eligible.length})`;
+  document.getElementById('stock-modal-title').textContent = `Units to Include for ${cleanTarget}`;
+  const listEl = document.getElementById('stock-modal-list');
+  const addBtn = document.getElementById('btn-add-selected-stock');
+  addBtn.style.display = 'block';
+  addBtn.textContent = `Continue (${eligible.length})`;
 
-    listEl.innerHTML = eligible.map((u, idx) => `
+  const noteText = isEquipBrand
+    ? `Note: Should only be ${cleanTarget} units`
+    : `Note: Uncheck any units you don't want sent to ${cleanTarget}`;
+
+  const noteHtml = `
+    <div style="background:#2b2410; border-left:3px solid #ffd54f; color:#ffd54f; padding:8px 10px; border-radius:4px; font-size:13px; margin-bottom:8px;">
+      <strong>${noteText}</strong>
+    </div>
+  `;
+
+  listEl.innerHTML = noteHtml + eligible.map((u, idx) => {
+    const statusTag = getUnitStatusTags(u.sentKey);
+
+        return `
       <label class="modal-item">
         <input type="checkbox" class="unit-pick-cb" value="${idx}" checked>
         <div>
-          <strong style="color:#4da3ff;">${u.label}</strong><br>
+          <strong style="color:#4da3ff;">${u.label}</strong>${statusTag}<br>
           <span style="font-size:13px; color:#ccc;">${u.text.split('\n').slice(1, 3).join(', ')}</span>
         </div>
       </label>
-    `).join('');
+    `;
+  }).join('');
 
-    listEl.querySelectorAll('.unit-pick-cb').forEach(cb => {
-      cb.onchange = () => {
-        const count = listEl.querySelectorAll('.unit-pick-cb:checked').length;
-        addBtn.textContent = `Continue (${count})`;
-      };
-    });
-
-    addBtn.onclick = () => {
-      const checkedIndices = [...listEl.querySelectorAll('.unit-pick-cb:checked')].map(cb => Number(cb.value));
-      if (checkedIndices.length === 0) return;
-      addBtn.onclick = confirmStockModal;
-      proceedWithSelectedUnits(checkedIndices.map(i => eligible[i]));
+  listEl.querySelectorAll('.unit-pick-cb').forEach(cb => {
+    cb.onchange = () => {
+      const count = listEl.querySelectorAll('.unit-pick-cb:checked').length;
+      addBtn.textContent = `Continue (${count})`;
     };
+  });
 
-    document.getElementById('stock-modal').style.display = 'flex';
-  } else {
-    proceedWithSelectedUnits(eligible);
-  }
+  addBtn.onclick = () => {
+    const checkedIndices = [...listEl.querySelectorAll('.unit-pick-cb:checked')].map(cb => Number(cb.value));
+    if (checkedIndices.length === 0) return;
+
+    const picked = checkedIndices.map(i => eligible[i]);
+    picked.forEach(u => {
+      if (u.sentKey) vendorSentUnits.add(u.sentKey);
+    });
+    updateBatchUI();
+    saveSessionState();
+
+    addBtn.onclick = confirmStockModal;
+    proceedWithSelectedUnits(picked);
+  };
+
+  document.getElementById('stock-modal').style.display = 'flex';
 }
 
-
-
-
-  
 
 function emailOffice() {
-  const officeList = (typeof EMAIL_DIRECTORY !== 'undefined' && EMAIL_DIRECTORY.OFFICE) || [];
-  if (officeList.length > 1) {
-    openEmailBranchPicker('Select Office', officeList, (toEmail) => {
-      launchEmail(getEmailSubjectPrefix(), buildQuoteText(), toEmail);
-    });
-  } else {
-    const toEmail = officeList.length === 1 ? officeList.at(0).email : '';
-    launchEmail(getEmailSubjectPrefix(), buildQuoteText(), toEmail);
-  }
+  const items = getAllWorkingUnits();
+  if (items.length === 0) return;
+
+  document.getElementById('stock-modal-title').textContent = 'Units to Email Office';
+  const listEl = document.getElementById('stock-modal-list');
+  const addBtn = document.getElementById('btn-add-selected-stock');
+  addBtn.style.display = 'block';
+
+  const noteHtml = `
+    <div style="background:#2b2410; border-left:3px solid #ffd54f; color:#ffd54f; padding:8px 10px; border-radius:4px; font-size:13px; margin-bottom:8px;">
+      <strong>Note: Uncheck any unit you are still working on</strong>
+    </div>
+  `;
+
+  listEl.innerHTML = noteHtml + items.map((u, idx) => {
+    const uBrand = (u.brand || '').toUpperCase();
+    const uDisp = (uBrand && uBrand !== 'GENERAL') ? `${u.label} (${uBrand})` : u.label;
+    const key = getUnitSentKey(u);
+    const alreadySent = officeSentUnits.has(key);
+    const statusTag = getUnitStatusTags(key);
+        return `
+      <label class="modal-item">
+        <input type="checkbox" class="office-unit-cb" value="${idx}" ${alreadySent ? '' : 'checked'}>
+        <div>
+          <strong style="color:#4da3ff;">${uDisp}</strong>${statusTag}<br>
+          <span style="font-size:13px; color:#ccc;">${u.rawFields?.desc || 'No description entered'}</span>
+        </div>
+      </label>
+    `;
+  }).join('');
+
+  const updateCount = () => {
+    const count = listEl.querySelectorAll('.office-unit-cb:checked').length;
+    addBtn.textContent = `Send to Office (${count})`;
+  };
+  updateCount();
+  listEl.querySelectorAll('.office-unit-cb').forEach(cb => cb.onchange = updateCount);
+
+  addBtn.onclick = () => {
+    const checkedIndices = [...listEl.querySelectorAll('.office-unit-cb:checked')].map(cb => Number(cb.value));
+    if (checkedIndices.length === 0) return;
+
+    const chosenUnits = checkedIndices.map(i => items[i]);
+    chosenUnits.forEach(u => officeSentUnits.add(getUnitSentKey(u)));
+    updateBatchUI();
+    saveSessionState();
+
+    addBtn.onclick = confirmStockModal;
+    closeStockModal();
+
+    const unitSummary = chosenUnits.map(u => {
+      const b = (u.brand || '').toUpperCase();
+      return (b && b !== 'GENERAL') ? `${u.label} (${b})` : u.label;
+    }).join(', ');
+
+    const subject = getEmailSubjectPrefix(unitSummary);
+    const officeList = (typeof EMAIL_DIRECTORY !== 'undefined' && EMAIL_DIRECTORY.OFFICE) || [];
+    const toEmail = officeList.length ? officeList.at(0).email : (typeof OFFICE_EMAIL !== 'undefined' ? OFFICE_EMAIL : '');
+
+    const smBlocks = chosenUnits
+      .filter(u => u.smPlusLines && u.smPlusLines.length > 0)
+      .map(u => `[${u.label}]\n${u.smPlusLines.join('\n')}`);
+
+    const bodyParts = [
+      chosenUnits.map(u => u.officeText).join('\n\n------------------------------\n\n')
+    ];
+    if (smBlocks.length > 0) {
+      bodyParts.push(`==============================\nSM+ TRUCK STOCK:\n${smBlocks.join('\n\n')}`);
+    }
+
+    launchEmail(subject, bodyParts.join('\n\n'), toEmail, '');
+  };
+
+  document.getElementById('stock-modal').style.display = 'flex';
 }
+ 
+
+
 
 function buildQuoteText() {
   const items = getAllWorkingUnits();
@@ -1125,7 +1262,9 @@ function saveSessionState() {
     cust: document.getElementById('cust')?.value || '',
     current,
     unitBatch,
-    editingIndex
+    editingIndex,
+    officeSent: [...officeSentUnits],
+    vendorSent: [...vendorSentUnits]
   };
   localStorage.setItem('hvacQuoteState', JSON.stringify(state));
 }
@@ -1147,7 +1286,6 @@ function restoreSessionState() {
     setVal('wo', state.wo);
     setVal('po', state.po);
     setVal('cust', state.cust);
-    
 
     const f = state.current || {};
     setVal('unitTag', f.unitTag);
@@ -1167,6 +1305,8 @@ function restoreSessionState() {
 
     unitBatch = Array.isArray(state.unitBatch) ? state.unitBatch : [];
     editingIndex = typeof state.editingIndex === 'number' ? state.editingIndex : -1;
+    officeSentUnits = new Set(state.officeSent || []);
+    vendorSentUnits = new Set(state.vendorSent || []);
     updateBatchUI();
   } catch (e) {
     console.error('Failed to restore session state:', e);
@@ -1176,11 +1316,14 @@ function restoreSessionState() {
 }
 
 
+
 function confirmNewJob() {
   if (!confirm('Are you sure? You will lose all info for this job.')) return;
   localStorage.removeItem('hvacQuoteState');
   ['wo', 'po', 'cust'].forEach(id => document.getElementById(id).value = '');
   unitBatch = [];
+  officeSentUnits.clear();
+  vendorSentUnits.clear();
   editingIndex = -1;
   resetUnitFields();
   document.getElementById('output').style.display = 'none';
