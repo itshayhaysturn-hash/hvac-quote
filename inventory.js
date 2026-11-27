@@ -25,20 +25,20 @@ P40A120V - 40A 3P 120V Contactor
 
 
 [Capacitors (Run)]
-INFO - greater than 80uf is a start cap. Comp using 80uf withot external relay has internal disconnect from capacitor after start. Voltage rating is the maximum continous voltage not an output voltage. Motor windings can produce higher than line voltage during operation typical 230v creates 300v so 370v capacitor.
-5RC - 5X440 Oval Run Capacitor
-75RC - 7.5X440 Oval Run Capacitor
-10RC - 10X440 Oval Run Capacitor
-125RC - 12.5X440 Oval Run Capacitor
-15RC - 15X440 Oval Run Capacitor
-20RC - 20X440 Oval Run Capacitor
-25RC - 25X440 Oval Run Capacitor
-30RC - 30X440 Oval Run Capacitor
-35RC - 35X440 Oval Run Capacitor
-40RC - 40X440 Oval Run Capacitor
-45RC - 45X440 Oval Run Capacitor
-50RC - 50X440 Oval Run Capacitor
-RC55 - 55X440 MFD Run Capacitor
+INFO - 70uf or greater is a start cap at 330v or less. Motor using max 80uf run cap must have 370v or 440v cap. Voltage rating is the maximum continous voltage not an output voltage. Motor windings can produce higher than line voltage during operation. HP/TON is aproximate charts vary, 440v replaces 370v, *always verify*.
+5RC - 5X440 Oval Run Capacitor(1/6-1/4hp)
+75RC - 7.5X440 Oval Run Capacitor(1/4-1/3hp)
+10RC - 10X440 Oval Run Capacitor(1/4-1/3hp)
+125RC - 12.5X440 Oval Run Capacitor(1/2hp)
+15RC - 15X440 Oval Run Capacitor(1/2-3/4hp)
+20RC - 20X440 Oval Run Capacitor(1/2-3/4hp)
+25RC - 25X440 Oval Run Capacitor(1.5ton)
+30RC - 30X440 Oval Run Capacitor(2-2.5ton)
+35RC - 35X440 Oval Run Capacitor(2-3ton)
+40RC - 40X440 Oval Run Capacitor(3-4ton)
+45RC - 45X440 Oval Run Capacitor(3.5-4ton)
+50RC - 50X440 Oval Run Capacitor(3-5ton)
+RC55 - 55X440 MFD Run Capacitor(4-5ton)
 
 [Condensor Motors]
 CFM14230 - 1/4HP 230V Condensor fan motor(rev)
@@ -89,6 +89,7 @@ MAPGAS - MAPP Gas 14.1oz(per bottle)
 
 [Wire Nut//Ties]
 WT11BL - 11" Black Wire Ties
+PDT - Panduit Tie Straps(36")
 WNBLUE - Blue Wire Nut
 WNORANGE - Orange Wire Nut
 WNYELLOW - Yellow Wire Nut
@@ -106,13 +107,14 @@ INFO - Additional categories
 805RCD - 80/5 MFD 440/370V Dual Run Capacitor
 
 [Capacitors (Start)]
-SC88250 - 88/250 Round Start Capacitor(88-106uf)
-SC88330 - 88/330 Round Start Capacitor(88-106uf, 330v hard start, 3hp and bigger, use on 250v)
-SC108250 - 108/250 Round Start Capacitor(108-130uf)
-SC124250 - 124/250 Round Start Capacitor(124-149uf)
-SC130250 - 130/250 Round Start Capacitor(130-156uf)
-SC189250 - 189/250 Round Start Capacitor(189-227uf)
-SC233250 - 233/250 Round Start Capacitor(233-280uf)
+INFO - hp is approximate charts vary, **always verify**. 330v similar to hard start.
+SC88250 - 88/250 Round Start Capacitor(88-106uf 1/4-1/3hp)
+SC88330 - 88/330 Round Start Capacitor(88-106uf)
+SC108250 - 108/250 Round Start Capacitor(108-130uf 1/3-1/2hp)
+SC124250 - 124/250 Round Start Capacitor(124-149uf 1/2-3/4hp)
+SC130250 - 130/250 Round Start Capacitor(130-156uf 1/2-3/4hp)
+SC189250 - 189/250 Round Start Capacitor(189-227uf 1-1.5hp)
+SC233250 - 233/250 Round Start Capacitor(233-280uf 1.5-2hp)
 
 [Evap//Watt Motors]
 EFM12230 - 1/2HP 230V 3SP Evaporator motor(rev)
@@ -140,7 +142,7 @@ UNIVCPUMP110 - 110-250V Univ Condensate Pump
 60FUSE600V - 60 Amp 600V Fuse
 
 [Relays]
-STR9063 - Start Relay 90-63
+STR9063 - Start Relay 90-63(115v not 240v)
 STR9064 - Start Relay 90-64
 STR9065 - Start Relay 90-65
 STR9066 - Start Relay 90-66

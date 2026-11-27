@@ -560,15 +560,17 @@ function addVendorRow(qty, desc, part, price, vendor) {
   container.appendChild(row);
 }
 
-function openRowVendorPicker(inputEl) {
+  function openRowVendorPicker(inputEl) {
   const rawBrand = document.getElementById('brand')?.value.trim().toUpperCase() || '';
   const preferredAlts = (typeof ALT_VENDOR_MAP !== 'undefined' && ALT_VENDOR_MAP[rawBrand]) || [];
-
   const emailVendors = (typeof EMAIL_DIRECTORY !== 'undefined')
-    ? Object.keys(EMAIL_DIRECTORY).filter(k => k !== 'OFFICE')
+    ? Object.keys(EMAIL_DIRECTORY).filter(k => k !== 'OFFICE' && k !== 'OTHER')
     : [];
-  const localStores = ['HOME DEPOT', 'GRAINGER', 'JOHNSTONE', 'LOWES'];
-  const allChoices = [...new Set([...preferredAlts, ...emailVendors, ...localStores])];
+  const directoryVendors = (typeof ALL_VENDORS !== 'undefined')
+    ? ALL_VENDORS
+    : emailVendors;
+
+  const allChoices = [...new Set([...preferredAlts, ...directoryVendors])];
 
   document.getElementById('stock-modal-title').textContent = 'Select Vendor / Store';
   const listEl = document.getElementById('stock-modal-list');
@@ -578,6 +580,8 @@ function openRowVendorPicker(inputEl) {
   listEl.innerHTML = allChoices.map(v => {
     const isAlt = preferredAlts.includes(v);
     const isEmailVendor = emailVendors.includes(v);
+    const note = (typeof VENDOR_NOTES !== 'undefined' && VENDOR_NOTES[v]) ? VENDOR_NOTES[v] : '';
+    const noteLine = note ? `<span style="font-size:12px; color:#ffd54f;">Carries: ${note}</span><br>` : '';
     const badge = isAlt
       ? `Recommended for ${rawBrand} (Email Vendor)`
       : (isEmailVendor ? 'Email Vendor' : 'Local Store (Office Email Only)');
@@ -586,7 +590,7 @@ function openRowVendorPicker(inputEl) {
       <button type="button" class="modal-item" style="color:#fff; font-size:16px; text-align:left; width:100%;" data-vendor="${v}">
         <div>
           <strong style="color:${nameColor};">${v}</strong><br>
-          <span style="font-size:12px; color:#aaa;">${badge}</span>
+          ${noteLine}<span style="font-size:12px; color:#aaa;">${badge}</span>
         </div>
       </button>
     `;
@@ -598,7 +602,6 @@ function openRowVendorPicker(inputEl) {
       </div>
     </button>
   `;
-
 
   listEl.querySelectorAll('button').forEach(btn => {
     btn.onclick = () => {
@@ -630,8 +633,8 @@ function openRowVendorPicker(inputEl) {
   document.getElementById('stock-modal').style.display = 'flex';
 }
 
-
 let triggeredVendorKeywords = new Set();
+
 
 function checkKeywords() {
   if (typeof VENDOR_KEYWORD_RULES === 'undefined') return;
@@ -884,11 +887,20 @@ function launchEmail(subject, body, toAddress = '', ccAddress = '') {
   const params = [];
   if (ccAddress && ccAddress.trim()) params.push(`cc=${encodeURIComponent(ccAddress.trim())}`);
   if (subject) params.push(`subject=${encodeURIComponent(subject)}`);
-  if (body) params.push(`body=${encodeURIComponent(body)}`);
 
-  const mailtoUrl = `mailto:${encodeURIComponent(cleanTo)}${params.length ? '?' + params.join('&') : ''}`;
+  if (body) {
+    const cleanBody = body
+      .replace(/[•●▪]/g, '-')              // Fixes Android Yahoo Mail mangling bullet dots (%E2%80%A2)
+      .replace(/[^\x00-\x7F]/g, '')        // Strips any other hidden Unicode symbols that choke Yahoo
+      .replace(/\r?\n/g, '\r\n');
+    params.push(`body=${encodeURIComponent(cleanBody)}`);
+  }
+
+  const mailtoUrl = `mailto:${cleanTo}${params.length ? '?' + params.join('&') : ''}`;
   window.location.href = mailtoUrl;
 }
+
+
 
 
 
